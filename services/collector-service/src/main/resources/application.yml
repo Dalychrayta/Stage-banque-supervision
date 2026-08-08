@@ -1,0 +1,73 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: collector-service
+  datasource:
+    url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:1521/XEPDB1
+    username: bct_user
+    password: bct_password
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: collector-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Topics Kafka
+kafka:
+  topics:
+    metrics-collected: metrics-collected
+    logs-collected: logs-collected
+    resource-discovered: resource-discovered
+
+# Prediction Engine URL
+prediction:
+  engine:
+    url: ${PREDICTION_ENGINE_URL:http://localhost:8000}
+
+# Discovery Service URL
+discovery:
+  service:
+    url: ${DISCOVERY_SERVICE_URL:http://localhost:8081}
+
+# Intervalle de collecte (ms)
+collector:
+  metrics:
+    interval-ms: 30000
+  logs:
+    interval-ms: 60000

@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: discovery-service
+          uri: lb://discovery-service
+          predicates:
+            - Path=/api/discovery/**
+          filters:
+            - RewritePath=/api/discovery/(?<remaining>.*), /api/${remaining}
+
+        - id: collector-service
+          uri: lb://collector-service
+          predicates:
+            - Path=/api/collector/**
+
+        - id: prediction-engine
+          uri: lb://prediction-engine
+          predicates:
+            - Path=/api/prediction/**
+
+        - id: rca-service
+          uri: lb://rca-service
+          predicates:
+            - Path=/api/rca/**
+
+        - id: auto-healing-service
+          uri: lb://auto-healing-service
+          predicates:
+            - Path=/api/healing/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

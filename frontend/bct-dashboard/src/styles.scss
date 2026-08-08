@@ -1,0 +1,29 @@
+@import "primeng/resources/themes/lara-light-blue/theme.css";
+@import "primeng/resources/primeng.css";
+@import "primeicons/primeicons.css";
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: #2d3748;
+  background: #f7fafc;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: #f7fafc;
+  color: #4a5568;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-color: #e2e8f0;
+}
+.p-datatable .p-datatable-tbody > tr > td { border-color: #e2e8f0; padding: 0.6rem 0.75rem; }
+.p-datatable .p-datatable-tbody > tr:hover { background: #f0f4ff !important; }
+.p-card { border-radius: 12px !important; box-shadow: 0 2px 8px rgba(0,0,0,.06) !important; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }

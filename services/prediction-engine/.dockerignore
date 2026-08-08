@@ -1,0 +1,8 @@
+.venv/
+.venv-py312/
+__pycache__/
+**/__pycache__/
+data/
+notebooks/
+*.pyc
+.env

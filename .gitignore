@@ -1,0 +1,54 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+.mvn/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.venv-*/
+venv/
+env/
+*.egg-info/
+dist/
+.pytest_cache/
+models/
+*.pkl
+*.joblib
+services/prediction-engine/data/*
+!services/prediction-engine/data/README.md
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+.classpath
+.project
+.settings/
+
+# Docker
+.docker/
+.tools/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / Config locaux
+*.env
+.env
+application-local.yml
+application-local.properties
