@@ -30,14 +30,18 @@ def analyze_metrics_batch(metrics: List[MetricInput]):
 
 
 @router.post("/train")
-async def train_model(file: UploadFile = File(...)):
-    """Entraîne le modèle sur un fichier CSV de métriques historiques."""
+async def train_model(file: UploadFile = File(...), contamination: float = 0.05):
+    """Entraîne le modèle sur un fichier CSV de métriques historiques.
+
+    contamination : proportion d'anomalies attendue dans les données (0.0-0.5).
+    À calibrer sur le taux réel observé, sinon le modèle sous- ou sur-détecte.
+    """
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Fichier CSV requis.")
     try:
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode("utf-8")))
-        result = prediction_service.train(df)
+        result = prediction_service.train(df, contamination=contamination)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

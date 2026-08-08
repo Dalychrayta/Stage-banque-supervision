@@ -140,8 +140,13 @@ class PredictionService:
             return "Taux d'erreur élevé — analyser les logs d'application pour identifier la cause."
         return "Anomalie détectée — investigation manuelle recommandée."
 
-    def train(self, data: pd.DataFrame) -> dict:
-        """Entraîne le modèle Isolation Forest sur un dataset."""
+    def train(self, data: pd.DataFrame, contamination: float = 0.05) -> dict:
+        """Entraîne le modèle Isolation Forest sur un dataset.
+
+        contamination doit refléter la proportion réelle d'anomalies attendue
+        dans les données d'entraînement — un contamination trop bas par rapport
+        au taux réel dilue la capacité du modèle à isoler les vraies anomalies.
+        """
         features = data[FEATURE_COLUMNS].fillna(0)
 
         self.scaler = StandardScaler()
@@ -149,7 +154,7 @@ class PredictionService:
 
         self.model = IsolationForest(
             n_estimators=100,
-            contamination=0.05,  # 5% d'anomalies attendues
+            contamination=contamination,
             random_state=42,
             n_jobs=-1
         )
@@ -164,7 +169,7 @@ class PredictionService:
             "status": "trained",
             "samples": len(features),
             "features": FEATURE_COLUMNS,
-            "contamination": 0.05
+            "contamination": contamination
         }
 
 
