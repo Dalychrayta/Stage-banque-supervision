@@ -107,9 +107,12 @@ Un `Jenkinsfile` déclaratif (build + tests, agents Docker par étage) est prés
 |---|---|
 | discovery-service | JUnit / Mockito |
 | rca-service | JUnit / Mockito |
+| auto-healing-service | JUnit / Mockito |
+| collector-service | JUnit / Mockito |
+| api-gateway | JUnit — intégration sécurité (WebTestClient) |
 | prediction-engine | pytest |
-| api-gateway, collector-service, auto-healing-service, eureka-server | à faire |
-| frontend Angular | à faire |
+| frontend Angular | Jasmine/Karma — auth (service, guard, intercepteur) |
+| eureka-server | aucun code applicatif à tester (`@EnableEurekaServer` seul) |
 
 ## Observabilité
 
