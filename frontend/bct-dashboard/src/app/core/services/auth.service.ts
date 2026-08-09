@@ -2,9 +2,10 @@ import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 const STORAGE_KEY = 'bct_auth';
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = environment.apiBaseUrl;
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

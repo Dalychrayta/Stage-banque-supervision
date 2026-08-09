@@ -4,8 +4,9 @@ import { Observable } from 'rxjs';
 import { Resource, ResourceStats } from '../models/resource.model';
 import { MetricSnapshot, LogEntry } from '../models/metric.model';
 import { IncidentAnalysis, HealingAction, HealingStats, RcaStats } from '../models/incident.model';
+import { environment } from '../../../environments/environment';
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = environment.apiBaseUrl;
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
