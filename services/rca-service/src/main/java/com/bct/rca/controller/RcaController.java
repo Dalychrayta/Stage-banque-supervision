@@ -12,7 +12,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/rca")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class RcaController {
 
     private final RcaService rcaService;

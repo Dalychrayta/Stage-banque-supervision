@@ -1,14 +1,16 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent],
   template: `
-    <div class="app-layout">
-      <app-sidebar></app-sidebar>
+    <div class="app-layout" [class.no-sidebar]="isLoginPage">
+      <app-sidebar *ngIf="!isLoginPage"></app-sidebar>
       <main class="main-content">
         <router-outlet></router-outlet>
       </main>
@@ -25,6 +27,17 @@ import { SidebarComponent } from './layout/sidebar/sidebar.component';
       background: #f7fafc;
       min-height: 100vh;
     }
+    .app-layout.no-sidebar .main-content {
+      margin-left: 0;
+    }
   `]
 })
-export class AppComponent {}
+export class AppComponent {
+  isLoginPage = false;
+
+  constructor(router: Router) {
+    router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
+      this.isLoginPage = (e as NavigationEnd).urlAfterRedirects.startsWith('/login');
+    });
+  }
+}

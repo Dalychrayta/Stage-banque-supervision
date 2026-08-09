@@ -15,7 +15,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/collector")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class CollectorController {
 
     private final CollectorService collectorService;

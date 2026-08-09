@@ -10,6 +10,13 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
       routes:
         - id: discovery-service
           uri: lb://discovery-service
@@ -44,6 +51,11 @@ eureka:
       defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
   instance:
     prefer-ip-address: true
+
+security:
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:bct2026}
 
 management:
   endpoints:

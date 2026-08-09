@@ -1,5 +1,6 @@
 package com.bct.healing.service;
 
+import com.bct.healing.client.RcaServiceClient;
 import com.bct.healing.model.ActionStatus;
 import com.bct.healing.model.ActionType;
 import com.bct.healing.model.HealingAction;
@@ -20,6 +21,7 @@ import java.util.NoSuchElementException;
 public class HealingService {
 
     private final HealingActionRepository repository;
+    private final RcaServiceClient rcaServiceClient;
 
     /**
      * Détermine et déclenche l'action de remédiation selon la catégorie RCA.
@@ -56,6 +58,14 @@ public class HealingService {
         repository.save(saved);
 
         log.info("Action {} exécutée pour {} — résultat: {}", rule.actionType(), resourceId, resultMessage);
+
+        // Une action automatique réussie referme l'incident RCA d'origine.
+        // Les actions non automatiques (NOTIFY_TEAM) laissent l'incident ouvert
+        // pour intervention humaine.
+        if (rule.isAutomatic() && incidentId != null) {
+            rcaServiceClient.resolveIncident(incidentId);
+        }
+
         return saved;
     }
 
@@ -109,7 +119,7 @@ public class HealingService {
     }
 
     public List<HealingAction> getAll() {
-        return repository.findTop20ByOrderByTriggeredAtDesc();
+        return repository.findTop500ByOrderByTriggeredAtDesc();
     }
 
     public List<HealingAction> getByResource(String resourceId) {

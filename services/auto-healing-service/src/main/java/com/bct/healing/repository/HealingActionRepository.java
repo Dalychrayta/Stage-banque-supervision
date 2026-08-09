@@ -14,7 +14,7 @@ public interface HealingActionRepository extends JpaRepository<HealingAction, Lo
 
     List<HealingAction> findByStatusOrderByTriggeredAtDesc(ActionStatus status);
 
-    List<HealingAction> findTop20ByOrderByTriggeredAtDesc();
+    List<HealingAction> findTop500ByOrderByTriggeredAtDesc();
 
     long countByStatus(ActionStatus status);
 }

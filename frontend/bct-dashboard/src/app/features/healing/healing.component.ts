@@ -6,16 +6,16 @@ import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { ApiService } from '../../core/services/api.service';
 import { HealingAction, HealingStats } from '../../core/models/incident.model';
+import { Resource } from '../../core/models/resource.model';
 
 @Component({
   selector: 'app-healing',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, DropdownModule, ToastModule, DialogModule, InputTextModule, HeaderComponent],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, DropdownModule, ToastModule, DialogModule, HeaderComponent],
   providers: [MessageService],
   template: `
     <app-header title="Auto-Healing Engine"></app-header>
@@ -50,18 +50,18 @@ import { HealingAction, HealingStats } from '../../core/models/incident.model';
 
     <p-dialog header="Action manuelle" [(visible)]="showManualDialog" [modal]="true" [style]="{width:'420px'}">
       <div class="manual-form">
-        <label>ID Ressource</label>
-        <input pInputText [(ngModel)]="manualResourceId" placeholder="ex: srv-001" style="width:100%" />
-        <label>Nom Ressource</label>
-        <input pInputText [(ngModel)]="manualResourceName" placeholder="ex: payment-server-01" style="width:100%" />
+        <label>Ressource</label>
+        <p-dropdown [options]="resourceOptions" [(ngModel)]="selectedResource" [filter]="true" filterBy="label"
+                    placeholder="Choisir une ressource" styleClass="w-full" [appendTo]="'body'"
+                    emptyMessage="Aucune ressource trouvée"></p-dropdown>
         <label>Action</label>
         <p-dropdown [options]="actionTypeOptions" [(ngModel)]="manualActionType"
-                    placeholder="Choisir une action" styleClass="w-full"></p-dropdown>
+                    placeholder="Choisir une action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
       </div>
       <ng-template pTemplate="footer">
         <button pButton label="Annuler" class="p-button-text" (click)="showManualDialog = false"></button>
         <button pButton label="Déclencher" icon="pi pi-play" class="p-button-danger"
-                (click)="triggerManual()" [disabled]="!manualResourceId || !manualActionType"></button>
+                (click)="triggerManual()" [disabled]="!selectedResource || !manualActionType"></button>
       </ng-template>
     </p-dialog>
   `,
@@ -86,7 +86,9 @@ import { HealingAction, HealingStats } from '../../core/models/incident.model';
 export class HealingComponent implements OnInit {
   actions: HealingAction[] = []; stats: HealingStats | null = null;
   loading = true; showManualDialog = false;
-  manualResourceId = ''; manualResourceName = ''; manualActionType = '';
+  resourceOptions: { label: string; value: { id: string; name: string } }[] = [];
+  selectedResource: { id: string; name: string } | null = null;
+  manualActionType = '';
   actionTypeOptions = [{label:'Redémarrer le service',value:'RESTART_SERVICE'},{label:'Vider le cache',value:'CLEAR_CACHE'},{label:'Libérer espace disque',value:'FREE_DISK_SPACE'},{label:'Terminer processus CPU',value:'KILL_PROCESS'},{label:"Notifier l'équipe",value:'NOTIFY_TEAM'}];
 
   constructor(private api: ApiService, private msg: MessageService) {}
@@ -94,6 +96,14 @@ export class HealingComponent implements OnInit {
   ngOnInit(): void {
     this.api.getHealingActions().subscribe({ next: d => { this.actions = d; this.loading = false; }, error: () => this.loading = false });
     this.api.getHealingStats().subscribe({ next: s => this.stats = s });
+    this.api.getResources().subscribe({
+      next: (resources: Resource[]) => {
+        this.resourceOptions = resources.map(r => ({
+          label: `${r.name} (${r.resourceId})`,
+          value: { id: r.resourceId, name: r.name }
+        }));
+      }
+    });
   }
 
   getIcon(status: string): string {
@@ -102,12 +112,14 @@ export class HealingComponent implements OnInit {
   }
 
   triggerManual(): void {
-    this.api.triggerManualHealing(this.manualResourceId, this.manualResourceName, this.manualActionType).subscribe({
+    if (!this.selectedResource) return;
+    const { id, name } = this.selectedResource;
+    this.api.triggerManualHealing(id, name, this.manualActionType).subscribe({
       next: a => {
         this.actions.unshift(a);
         this.showManualDialog = false;
-        this.msg.add({severity:'success',summary:'Action déclenchée',detail:`${this.manualActionType} sur ${this.manualResourceName}`});
-        this.manualResourceId=''; this.manualResourceName=''; this.manualActionType='';
+        this.msg.add({severity:'success',summary:'Action déclenchée',detail:`${this.manualActionType} sur ${name}`});
+        this.selectedResource = null; this.manualActionType='';
         this.api.getHealingStats().subscribe({next:s=>this.stats=s});
       }
     });

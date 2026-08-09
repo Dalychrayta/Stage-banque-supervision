@@ -117,7 +117,7 @@ public class RcaService {
     }
 
     public List<IncidentAnalysis> getAll() {
-        return repository.findTop10ByOrderByAnalyzedAtDesc();
+        return repository.findTop500ByOrderByAnalyzedAtDesc();
     }
 
     public List<IncidentAnalysis> getByResource(String resourceId) {

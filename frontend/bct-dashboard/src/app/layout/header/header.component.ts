@@ -1,5 +1,7 @@
 import { Component, Input, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -13,6 +15,9 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
           <span class="dot"></span> LIVE
         </span>
         <span class="time">{{ currentTime | date:'HH:mm:ss' }}</span>
+        <button class="logout-btn" (click)="logout()" title="Se déconnecter">
+          <i class="pi pi-sign-out"></i>
+        </button>
       </div>
     </header>
   `,
@@ -61,15 +66,36 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
       50% { opacity: 0.3; }
     }
     .time { color: #718096; font-size: 0.9rem; font-family: monospace; }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: #718096;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.35rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+    }
+    .logout-btn:hover { background: #f7fafc; color: #e53e3e; }
   `]
 })
 export class HeaderComponent {
   @Input() title = 'Dashboard';
   currentTime = new Date();
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private auth: AuthService,
+    private router: Router
+  ) {
     if (isPlatformBrowser(this.platformId)) {
       setInterval(() => this.currentTime = new Date(), 1000);
     }
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.router.navigate(['/login']);
   }
 }

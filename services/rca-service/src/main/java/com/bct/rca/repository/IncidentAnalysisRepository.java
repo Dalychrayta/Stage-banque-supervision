@@ -18,7 +18,7 @@ public interface IncidentAnalysisRepository extends JpaRepository<IncidentAnalys
     List<IncidentAnalysis> findBySeverityAndAnalyzedAtAfterOrderByAnalyzedAtDesc(
             String severity, LocalDateTime after);
 
-    List<IncidentAnalysis> findTop10ByOrderByAnalyzedAtDesc();
+    List<IncidentAnalysis> findTop500ByOrderByAnalyzedAtDesc();
 
     long countByStatus(AnalysisStatus status);
 }

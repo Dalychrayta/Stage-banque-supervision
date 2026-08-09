@@ -113,7 +113,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private loadData(): void {
     this.api.getResourceStats().subscribe({ next: s => { this.stats = s; this.buildStatusChart(s); } });
     this.api.getOpenIncidents().subscribe({ next: i => { this.openIncidents = i; this.buildSeverityChart(i); } });
-    this.buildTrendChart();
+    this.api.getIncidents().subscribe({ next: all => this.buildTrendChart(all) });
   }
 
   private buildStatusChart(s: ResourceStats): void {
@@ -122,8 +122,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private buildSeverityChart(incidents: IncidentAnalysis[]): void {
     this.severityChartData = { labels: ['CRITICAL','WARNING'], datasets: [{ data: [incidents.filter(i=>i.severity==='CRITICAL').length, incidents.filter(i=>i.severity==='WARNING').length], backgroundColor: ['#e53e3e','#d69e2e'] }] };
   }
-  private buildTrendChart(): void {
-    this.trendChartData = { labels: Array.from({length:12},(_,i)=>`${23-i}h`).reverse(), datasets: [{ data: Array.from({length:12},()=>Math.floor(Math.random()*5)), borderColor: '#6c9bff', backgroundColor: 'rgba(108,155,255,.1)', fill: true, tension: 0.4 }] };
+  private buildTrendChart(incidents: IncidentAnalysis[]): void {
+    // Vraies données : compte les incidents détectés dans chacune des 24 dernières heures.
+    const now = Date.now();
+    const counts = Array(24).fill(0);
+    incidents.forEach(inc => {
+      const hoursAgo = Math.floor((now - new Date(inc.analyzedAt).getTime()) / 3600000);
+      if (hoursAgo >= 0 && hoursAgo < 24) counts[23 - hoursAgo]++;
+    });
+    const labels = Array.from({ length: 24 }, (_, i) => {
+      const d = new Date(now - (23 - i) * 3600000);
+      return `${d.getHours()}h`;
+    });
+    this.trendChartData = { labels, datasets: [{ data: counts, borderColor: '#6c9bff', backgroundColor: 'rgba(108,155,255,.1)', fill: true, tension: 0.4 }] };
   }
 
   ngOnDestroy(): void { this.sub.unsubscribe(); }

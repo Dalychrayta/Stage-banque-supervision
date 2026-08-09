@@ -22,9 +22,6 @@ import { CommonModule } from '@angular/common';
         <a routerLink="/anomalies" routerLinkActive="active" class="nav-item">
           <i class="pi pi-exclamation-triangle"></i><span>Anomalies</span>
         </a>
-        <a routerLink="/rca" routerLinkActive="active" class="nav-item">
-          <i class="pi pi-search"></i><span>Analyse RCA</span>
-        </a>
         <a routerLink="/healing" routerLinkActive="active" class="nav-item">
           <i class="pi pi-wrench"></i><span>Auto-Healing</span>
         </a>

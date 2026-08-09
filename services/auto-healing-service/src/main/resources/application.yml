@@ -54,3 +54,8 @@ kafka:
     rca-result: rca-result
     healing-action: healing-action
     anomaly-detected: anomaly-detected
+
+# RCA Service URL
+rca:
+  service:
+    url: ${RCA_SERVICE_URL:http://localhost:8083}

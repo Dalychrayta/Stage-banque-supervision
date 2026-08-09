@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/healing")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class HealingController {
 
     private final HealingService healingService;
