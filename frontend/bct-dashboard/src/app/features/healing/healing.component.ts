@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { ToastModule } from 'primeng/toast';
@@ -29,7 +29,8 @@ import { Resource } from '../../core/models/resource.model';
         <button pButton label="Action manuelle" icon="pi pi-play" class="p-button-outlined manual-btn" (click)="showManualDialog = true"></button>
       </div>
 
-      <p-table [value]="actions" [rows]="15" [paginator]="true" styleClass="p-datatable-gridlines p-datatable-sm" [loading]="loading">
+      <p-table [value]="actions" [rows]="pageSize" [paginator]="true" [lazy]="true" [totalRecords]="totalRecords"
+               (onLazyLoad)="onPageChange($event)" styleClass="p-datatable-gridlines p-datatable-sm" [loading]="loading">
         <ng-template pTemplate="header">
           <tr><th>Ressource</th><th>Action</th><th>Cause</th><th>Description</th><th>Statut</th><th>Type</th><th>Résultat</th><th>Date</th></tr>
         </ng-template>
@@ -86,6 +87,9 @@ import { Resource } from '../../core/models/resource.model';
 export class HealingComponent implements OnInit {
   actions: HealingAction[] = []; stats: HealingStats | null = null;
   loading = true; showManualDialog = false;
+  totalRecords = 0;
+  pageSize = 15;
+  private currentPage = 0;
   resourceOptions: { label: string; value: { id: string; name: string } }[] = [];
   selectedResource: { id: string; name: string } | null = null;
   manualActionType = '';
@@ -94,7 +98,6 @@ export class HealingComponent implements OnInit {
   constructor(private api: ApiService, private msg: MessageService) {}
 
   ngOnInit(): void {
-    this.api.getHealingActions().subscribe({ next: d => { this.actions = d; this.loading = false; }, error: () => this.loading = false });
     this.api.getHealingStats().subscribe({ next: s => this.stats = s });
     this.api.getResources().subscribe({
       next: (resources: Resource[]) => {
@@ -103,6 +106,16 @@ export class HealingComponent implements OnInit {
           value: { id: r.resourceId, name: r.name }
         }));
       }
+    });
+  }
+
+  onPageChange(event: TableLazyLoadEvent): void {
+    this.pageSize = event.rows ?? this.pageSize;
+    this.currentPage = Math.floor((event.first ?? 0) / this.pageSize);
+    this.loading = true;
+    this.api.getHealingActions(this.currentPage, this.pageSize).subscribe({
+      next: d => { this.actions = d.content; this.totalRecords = d.totalElements; this.loading = false; },
+      error: () => this.loading = false
     });
   }
 

@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Resource, ResourceStats } from '../models/resource.model';
 import { MetricSnapshot, LogEntry } from '../models/metric.model';
-import { IncidentAnalysis, HealingAction, HealingStats, RcaStats } from '../models/incident.model';
+import { IncidentAnalysis, HealingAction, HealingStats, RcaStats, PagedResponse } from '../models/incident.model';
 import { environment } from '../../../environments/environment';
 
 const API_BASE = environment.apiBaseUrl;
@@ -50,8 +50,16 @@ export class ApiService {
   }
 
   // --- RCA (rca-service) ---
-  getIncidents(): Observable<IncidentAnalysis[]> {
-    return this.http.get<IncidentAnalysis[]>(`${API_BASE}/rca`);
+  getIncidents(page = 0, size = 20): Observable<PagedResponse<IncidentAnalysis>> {
+    return this.http.get<PagedResponse<IncidentAnalysis>>(`${API_BASE}/rca`, {
+      params: new HttpParams().set('page', page).set('size', size)
+    });
+  }
+
+  getRecentIncidents(hours = 24): Observable<IncidentAnalysis[]> {
+    return this.http.get<IncidentAnalysis[]>(`${API_BASE}/rca/recent`, {
+      params: new HttpParams().set('hours', hours)
+    });
   }
 
   getOpenIncidents(): Observable<IncidentAnalysis[]> {
@@ -71,8 +79,10 @@ export class ApiService {
   }
 
   // --- HEALING (auto-healing-service) ---
-  getHealingActions(): Observable<HealingAction[]> {
-    return this.http.get<HealingAction[]>(`${API_BASE}/healing`);
+  getHealingActions(page = 0, size = 20): Observable<PagedResponse<HealingAction>> {
+    return this.http.get<PagedResponse<HealingAction>>(`${API_BASE}/healing`, {
+      params: new HttpParams().set('page', page).set('size', size)
+    });
   }
 
   getHealingStats(): Observable<HealingStats> {

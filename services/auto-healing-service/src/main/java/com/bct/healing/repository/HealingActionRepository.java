@@ -2,6 +2,8 @@ package com.bct.healing.repository;
 
 import com.bct.healing.model.ActionStatus;
 import com.bct.healing.model.HealingAction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +16,7 @@ public interface HealingActionRepository extends JpaRepository<HealingAction, Lo
 
     List<HealingAction> findByStatusOrderByTriggeredAtDesc(ActionStatus status);
 
-    List<HealingAction> findTop500ByOrderByTriggeredAtDesc();
+    Page<HealingAction> findAllByOrderByTriggeredAtDesc(Pageable pageable);
 
     long countByStatus(ActionStatus status);
 }

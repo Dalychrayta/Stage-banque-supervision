@@ -18,7 +18,7 @@ env/
 *.egg-info/
 dist/
 .pytest_cache/
-models/
+services/prediction-engine/app/models/
 *.pkl
 *.joblib
 services/prediction-engine/data/*

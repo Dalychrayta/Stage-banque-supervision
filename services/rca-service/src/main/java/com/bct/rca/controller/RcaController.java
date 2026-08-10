@@ -3,6 +3,8 @@ package com.bct.rca.controller;
 import com.bct.rca.model.IncidentAnalysis;
 import com.bct.rca.service.RcaService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +19,15 @@ public class RcaController {
     private final RcaService rcaService;
 
     @GetMapping
-    public ResponseEntity<List<IncidentAnalysis>> getAll() {
-        return ResponseEntity.ok(rcaService.getAll());
+    public ResponseEntity<Page<IncidentAnalysis>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(rcaService.getAll(PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<IncidentAnalysis>> getRecent(@RequestParam(defaultValue = "24") int hours) {
+        return ResponseEntity.ok(rcaService.getRecent(hours));
     }
 
     @GetMapping("/open")

@@ -103,11 +103,13 @@ class HealingServiceTest {
     }
 
     @Test
-    void getAll_shouldDelegateToRepository() {
-        List<HealingAction> expected = List.of(HealingAction.builder().id(1L).build());
-        when(repository.findTop500ByOrderByTriggeredAtDesc()).thenReturn(expected);
+    void getAll_shouldDelegateToRepositoryWithPagination() {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 20);
+        org.springframework.data.domain.Page<HealingAction> expected =
+                new org.springframework.data.domain.PageImpl<>(List.of(HealingAction.builder().id(1L).build()));
+        when(repository.findAllByOrderByTriggeredAtDesc(pageable)).thenReturn(expected);
 
-        List<HealingAction> result = healingService.getAll();
+        org.springframework.data.domain.Page<HealingAction> result = healingService.getAll(pageable);
 
         assertThat(result).isEqualTo(expected);
     }

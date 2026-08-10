@@ -4,6 +4,8 @@ import com.bct.healing.model.ActionType;
 import com.bct.healing.model.HealingAction;
 import com.bct.healing.service.HealingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +20,10 @@ public class HealingController {
     private final HealingService healingService;
 
     @GetMapping
-    public ResponseEntity<List<HealingAction>> getAll() {
-        return ResponseEntity.ok(healingService.getAll());
+    public ResponseEntity<Page<HealingAction>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(healingService.getAll(PageRequest.of(page, size)));
     }
 
     @GetMapping("/resource/{resourceId}")

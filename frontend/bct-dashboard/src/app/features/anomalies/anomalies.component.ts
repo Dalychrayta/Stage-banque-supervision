@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { TableModule } from 'primeng/table';
+import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -24,12 +24,13 @@ import { interval, Subscription } from 'rxjs';
         <div class="stat-box open"><i class="pi pi-exclamation-circle"></i><div><span>{{ stats.open }}</span><small>Ouverts</small></div></div>
         <div class="stat-box resolved"><i class="pi pi-check-circle"></i><div><span>{{ stats.resolved }}</span><small>Résolus</small></div></div>
         <div class="stat-box total"><i class="pi pi-list"></i><div><span>{{ stats.total }}</span><small>Total</small></div></div>
-        <div class="summary-item critical"><i class="pi pi-times-circle"></i><span>{{ criticalCount }} CRITICAL</span></div>
-        <div class="summary-item warning"><i class="pi pi-exclamation-triangle"></i><span>{{ warningCount }} WARNING</span></div>
+        <div class="summary-item critical"><i class="pi pi-times-circle"></i><span>{{ stats.criticalOpen }} CRITICAL</span></div>
+        <div class="summary-item warning"><i class="pi pi-exclamation-triangle"></i><span>{{ stats.warningOpen }} WARNING</span></div>
         <div class="refresh-info"><i class="pi pi-refresh"></i> Actualisation auto 30s</div>
       </div>
 
-      <p-table [value]="incidents" [rows]="15" [paginator]="true" dataKey="id" [expandedRowKeys]="expandedRows"
+      <p-table [value]="incidents" [rows]="pageSize" [paginator]="true" dataKey="id" [expandedRowKeys]="expandedRows"
+               [lazy]="true" [totalRecords]="totalRecords" (onLazyLoad)="onPageChange($event)"
                styleClass="p-datatable-gridlines p-datatable-sm" [loading]="loading">
         <ng-template pTemplate="header">
           <tr><th style="width:2.5rem"></th><th>Ressource</th><th>Sévérité</th><th>Score</th><th>Métriques</th><th>Cause</th><th>Confiance</th><th>Statut</th><th>Date</th><th>Action</th></tr>
@@ -109,21 +110,36 @@ export class AnomaliesComponent implements OnInit, OnDestroy {
   stats: RcaStats | null = null;
   loading = true;
   expandedRows: Record<string, boolean> = {};
+  totalRecords = 0;
+  pageSize = 15;
+  private currentPage = 0;
   private sub = new Subscription();
-  get criticalCount() { return this.incidents.filter(i => i.severity === 'CRITICAL' && i.status === 'OPEN').length; }
-  get warningCount()  { return this.incidents.filter(i => i.severity === 'WARNING' && i.status === 'OPEN').length; }
 
   constructor(private api: ApiService, private msg: MessageService, @Inject(PLATFORM_ID) private platformId: Object) {}
 
   ngOnInit(): void {
-    this.load();
+    this.api.getRcaStats().subscribe({ next: s => this.stats = s });
     if (isPlatformBrowser(this.platformId)) {
-      this.sub.add(interval(30000).subscribe(() => this.load()));
+      this.sub.add(interval(30000).subscribe(() => this.refresh()));
     }
   }
 
-  load(): void {
-    this.api.getIncidents().subscribe({ next: d => { this.incidents = d; this.loading = false; }, error: () => this.loading = false });
+  onPageChange(event: TableLazyLoadEvent): void {
+    this.pageSize = event.rows ?? this.pageSize;
+    this.currentPage = Math.floor((event.first ?? 0) / this.pageSize);
+    this.loadPage();
+  }
+
+  private loadPage(): void {
+    this.loading = true;
+    this.api.getIncidents(this.currentPage, this.pageSize).subscribe({
+      next: d => { this.incidents = d.content; this.totalRecords = d.totalElements; this.loading = false; },
+      error: () => this.loading = false
+    });
+  }
+
+  private refresh(): void {
+    this.loadPage();
     this.api.getRcaStats().subscribe({ next: s => this.stats = s });
   }
 

@@ -6,6 +6,8 @@ import com.bct.rca.model.IncidentAnalysis;
 import com.bct.rca.repository.IncidentAnalysisRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -116,8 +118,12 @@ public class RcaService {
         return val instanceof Number n ? n.doubleValue() : null;
     }
 
-    public List<IncidentAnalysis> getAll() {
-        return repository.findTop500ByOrderByAnalyzedAtDesc();
+    public Page<IncidentAnalysis> getAll(Pageable pageable) {
+        return repository.findAllByOrderByAnalyzedAtDesc(pageable);
+    }
+
+    public List<IncidentAnalysis> getRecent(int hoursBack) {
+        return repository.findByAnalyzedAtAfterOrderByAnalyzedAtDesc(LocalDateTime.now().minusHours(hoursBack));
     }
 
     public List<IncidentAnalysis> getByResource(String resourceId) {
@@ -132,6 +138,11 @@ public class RcaService {
     public IncidentAnalysis resolve(Long id) {
         IncidentAnalysis analysis = repository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Incident non trouvé: " + id));
+        // Idempotent : un incident déjà résolu (ex. redélivrance Kafka) ne doit
+        // pas voir sa date de résolution écrasée par un second appel.
+        if (analysis.getStatus() == AnalysisStatus.RESOLVED) {
+            return analysis;
+        }
         analysis.setStatus(AnalysisStatus.RESOLVED);
         analysis.setResolvedAt(LocalDateTime.now());
         return repository.save(analysis);
@@ -141,7 +152,9 @@ public class RcaService {
         return Map.of(
                 "open", repository.countByStatus(AnalysisStatus.OPEN),
                 "resolved", repository.countByStatus(AnalysisStatus.RESOLVED),
-                "total", repository.count()
+                "total", repository.count(),
+                "criticalOpen", repository.countBySeverityAndStatus("CRITICAL", AnalysisStatus.OPEN),
+                "warningOpen", repository.countBySeverityAndStatus("WARNING", AnalysisStatus.OPEN)
         );
     }
 

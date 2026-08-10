@@ -113,7 +113,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private loadData(): void {
     this.api.getResourceStats().subscribe({ next: s => { this.stats = s; this.buildStatusChart(s); } });
     this.api.getOpenIncidents().subscribe({ next: i => { this.openIncidents = i; this.buildSeverityChart(i); } });
-    this.api.getIncidents().subscribe({ next: all => this.buildTrendChart(all) });
+    this.api.getRecentIncidents(24).subscribe({ next: recent => this.buildTrendChart(recent) });
   }
 
   private buildStatusChart(s: ResourceStats): void {
