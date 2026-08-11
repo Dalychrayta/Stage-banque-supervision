@@ -18,5 +18,7 @@ public interface HealingActionRepository extends JpaRepository<HealingAction, Lo
 
     Page<HealingAction> findAllByOrderByTriggeredAtDesc(Pageable pageable);
 
+    boolean existsByIncidentId(Long incidentId);
+
     long countByStatus(ActionStatus status);
 }

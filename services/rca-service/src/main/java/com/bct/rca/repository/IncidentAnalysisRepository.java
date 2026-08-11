@@ -9,9 +9,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface IncidentAnalysisRepository extends JpaRepository<IncidentAnalysis, Long> {
+
+    Optional<IncidentAnalysis> findBySourceMetricId(Long sourceMetricId);
 
     List<IncidentAnalysis> findByResourceIdOrderByAnalyzedAtDesc(String resourceId);
 

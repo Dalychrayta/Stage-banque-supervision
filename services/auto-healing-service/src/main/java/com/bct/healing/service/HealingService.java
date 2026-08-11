@@ -36,6 +36,13 @@ public class HealingService {
         String severity = (String) rcaEvent.getOrDefault("severity", "WARNING");
         Long incidentId = rcaEvent.get("incidentId") instanceof Number n ? n.longValue() : null;
 
+        // Idempotence : une redélivrance Kafka du même résultat RCA ne doit
+        // pas déclencher une deuxième action de remédiation pour le même incident.
+        if (incidentId != null && repository.existsByIncidentId(incidentId)) {
+            log.info("Incident #{} déjà traité par auto-healing — pas de doublon", incidentId);
+            return null;
+        }
+
         HealingRule rule = selectRule(causeCategory, severity);
 
         HealingAction action = HealingAction.builder()

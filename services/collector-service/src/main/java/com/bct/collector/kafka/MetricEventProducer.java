@@ -26,6 +26,9 @@ public class MetricEventProducer {
     public void sendMetricCollected(MetricSnapshot metric) {
         Map<String, Object> event = new HashMap<>();
         event.put("eventType", "METRIC_COLLECTED");
+        // Identifiant stable de la métrique source : sert de clé d'idempotence
+        // en aval (rca-service) en cas de redélivrance Kafka du même message.
+        event.put("metricId", metric.getId());
         event.put("resourceId", metric.getResourceId());
         event.put("resourceName", metric.getResourceName());
         event.put("resourceType", metric.getResourceType());

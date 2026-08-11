@@ -71,6 +71,18 @@ class HealingServiceTest {
     }
 
     @Test
+    void triggerHealing_shouldSkipWhenIncidentAlreadyHealed() {
+        when(repository.existsByIncidentId(42L)).thenReturn(true);
+        Map<String, Object> event = baseEvent("CPU_SATURATION", 42L);
+
+        HealingAction result = healingService.triggerHealing(event);
+
+        assertThat(result).isNull();
+        verify(repository, never()).save(any());
+        verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    @Test
     void triggerHealing_shouldNotResolveIncidentWhenActionIsManualNotification() {
         Map<String, Object> event = baseEvent("UNKNOWN", 43L);
 

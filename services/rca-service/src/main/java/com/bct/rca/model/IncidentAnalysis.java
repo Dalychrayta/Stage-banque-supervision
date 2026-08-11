@@ -24,6 +24,12 @@ public class IncidentAnalysis {
     @Column(name = "RESOURCE_ID", nullable = false, length = 100)
     private String resourceId;
 
+    // Id de la métrique (collector-service) à l'origine de l'anomalie —
+    // sert à détecter une redélivrance Kafka du même événement et éviter
+    // de créer un incident en double.
+    @Column(name = "SOURCE_METRIC_ID")
+    private Long sourceMetricId;
+
     @Column(name = "RESOURCE_NAME", length = 200)
     private String resourceName;
 

@@ -26,6 +26,20 @@ public class RcaService {
 
     @Transactional
     public IncidentAnalysis analyzeAnomaly(Map<String, Object> anomalyEvent) {
+        Long sourceMetricId = anomalyEvent.get("metricId") instanceof Number n ? n.longValue() : null;
+
+        // Idempotence : si ce même événement metricId a déjà été traité
+        // (redélivrance Kafka après un redémarrage avant commit d'offset),
+        // on renvoie l'incident existant plutôt que d'en créer un doublon.
+        if (sourceMetricId != null) {
+            var existing = repository.findBySourceMetricId(sourceMetricId);
+            if (existing.isPresent()) {
+                log.info("Anomalie déjà traitée pour metricId={} — incident #{} réutilisé, pas de doublon",
+                        sourceMetricId, existing.get().getId());
+                return existing.get();
+            }
+        }
+
         String resourceId = (String) anomalyEvent.getOrDefault("resourceId", "unknown");
         String resourceName = (String) anomalyEvent.getOrDefault("resourceName", "unknown");
         String severity = (String) anomalyEvent.getOrDefault("severity", "WARNING");
@@ -38,6 +52,7 @@ public class RcaService {
         IncidentAnalysis analysis = IncidentAnalysis.builder()
                 .resourceId(resourceId)
                 .resourceName(resourceName)
+                .sourceMetricId(sourceMetricId)
                 .anomalyScore(anomalyScore)
                 .severity(severity)
                 .anomalousMetrics(anomalousMetrics)

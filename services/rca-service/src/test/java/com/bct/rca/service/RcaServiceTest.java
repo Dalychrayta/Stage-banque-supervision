@@ -96,6 +96,32 @@ class RcaServiceTest {
     }
 
     @Test
+    void analyzeAnomaly_shouldReuseExistingIncidentOnDuplicateMetricId() {
+        IncidentAnalysis existing = IncidentAnalysis.builder().id(99L).sourceMetricId(555L).build();
+        when(repository.findBySourceMetricId(555L)).thenReturn(java.util.Optional.of(existing));
+
+        Map<String, Object> event = Map.of("resourceId", "srv-004", "cpuUsage", 99.0, "metricId", 555);
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        assertThat(result).isEqualTo(existing);
+        verify(repository, never()).save(any(IncidentAnalysis.class));
+        verify(rcaResultProducer, never()).sendRcaResult(any());
+    }
+
+    @Test
+    void analyzeAnomaly_shouldCreateNewIncidentWhenMetricIdNotYetSeen() {
+        when(repository.findBySourceMetricId(777L)).thenReturn(java.util.Optional.empty());
+
+        Map<String, Object> event = Map.of("resourceId", "srv-005", "cpuUsage", 99.0, "metricId", 777);
+
+        rcaService.analyzeAnomaly(event);
+
+        verify(repository, times(1)).save(any(IncidentAnalysis.class));
+        verify(rcaResultProducer, times(1)).sendRcaResult(any());
+    }
+
+    @Test
     void resolve_shouldMarkIncidentAsResolved() {
         IncidentAnalysis existing = IncidentAnalysis.builder()
                 .id(42L)
