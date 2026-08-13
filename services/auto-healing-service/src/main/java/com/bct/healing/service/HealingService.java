@@ -24,6 +24,7 @@ public class HealingService {
 
     private final HealingActionRepository repository;
     private final RcaServiceClient rcaServiceClient;
+    private final RealActionExecutor realActionExecutor;
 
     /**
      * Détermine et déclenche l'action de remédiation selon la catégorie RCA.
@@ -60,18 +61,20 @@ public class HealingService {
         HealingAction saved = repository.save(action);
 
         // Exécution de l'action
-        String resultMessage = executeAction(saved, rule);
-        saved.setResultMessage(resultMessage);
-        saved.setStatus(ActionStatus.SUCCESS);
+        RealActionExecutor.ActionResult result = executeAction(saved, rule);
+        saved.setResultMessage(result.message());
+        saved.setStatus(result.success() ? ActionStatus.SUCCESS : ActionStatus.FAILED);
         saved.setCompletedAt(LocalDateTime.now());
         repository.save(saved);
 
-        log.info("Action {} exécutée pour {} — résultat: {}", rule.actionType(), resourceId, resultMessage);
+        log.info("Action {} exécutée pour {} — statut: {} — résultat: {}",
+                rule.actionType(), resourceId, saved.getStatus(), result.message());
 
-        // Une action automatique réussie referme l'incident RCA d'origine.
-        // Les actions non automatiques (NOTIFY_TEAM) laissent l'incident ouvert
-        // pour intervention humaine.
-        if (rule.isAutomatic() && incidentId != null) {
+        // Une action automatique referme l'incident RCA d'origine uniquement
+        // si elle a réellement réussi. Les actions non automatiques
+        // (NOTIFY_TEAM) ou échouées laissent l'incident ouvert pour
+        // intervention humaine.
+        if (rule.isAutomatic() && result.success() && incidentId != null) {
             rcaServiceClient.resolveIncident(incidentId);
         }
 
@@ -113,10 +116,18 @@ public class HealingService {
         };
     }
 
-    private String executeAction(HealingAction action, HealingRule rule) {
+    private RealActionExecutor.ActionResult executeAction(HealingAction action, HealingRule rule) {
+        // Cible réelle (srv-002 / PlatformeBack) : on exécute vraiment
+        // l'action au lieu de la simuler, pour RESTART_SERVICE et KILL_PROCESS
+        // (les deux reviennent à arrêter puis relancer le seul processus réel).
+        if (realActionExecutor.isRealTarget(action.getResourceId())
+                && (rule.actionType() == ActionType.RESTART_SERVICE || rule.actionType() == ActionType.KILL_PROCESS)) {
+            return realActionExecutor.restartRealService();
+        }
+
         // Dans l'environnement de démonstration, on simule l'exécution
         // En production, ici on appellerait les APIs de gestion d'infrastructure
-        return switch (rule.actionType()) {
+        String message = switch (rule.actionType()) {
             case RESTART_SERVICE -> "[SIMULÉ] Service " + action.getResourceName() + " redémarré avec succès.";
             case KILL_PROCESS -> "[SIMULÉ] Processus CPU-intensifs terminés sur " + action.getResourceName();
             case FREE_DISK_SPACE -> "[SIMULÉ] 2.3 GB libérés sur " + action.getResourceName();
@@ -125,6 +136,7 @@ public class HealingService {
             case NOTIFY_TEAM -> "Notification envoyée à l'équipe technique pour " + action.getResourceName();
             default -> "Action enregistrée. Intervention manuelle requise.";
         };
+        return new RealActionExecutor.ActionResult(true, message);
     }
 
     public Page<HealingAction> getAll(Pageable pageable) {
@@ -157,9 +169,9 @@ public class HealingService {
                 .triggeredAt(LocalDateTime.now())
                 .build();
         HealingAction saved = repository.save(action);
-        String result = executeAction(saved, rule);
-        saved.setResultMessage(result);
-        saved.setStatus(ActionStatus.SUCCESS);
+        RealActionExecutor.ActionResult result = executeAction(saved, rule);
+        saved.setResultMessage(result.message());
+        saved.setStatus(result.success() ? ActionStatus.SUCCESS : ActionStatus.FAILED);
         saved.setCompletedAt(LocalDateTime.now());
         return repository.save(saved);
     }

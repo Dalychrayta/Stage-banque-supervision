@@ -25,13 +25,15 @@ class HealingServiceTest {
 
     private HealingActionRepository repository;
     private RcaServiceClient rcaServiceClient;
+    private RealActionExecutor realActionExecutor;
     private HealingService healingService;
 
     @BeforeEach
     void setUp() {
         repository = mock(HealingActionRepository.class);
         rcaServiceClient = mock(RcaServiceClient.class);
-        healingService = new HealingService(repository, rcaServiceClient);
+        realActionExecutor = mock(RealActionExecutor.class);
+        healingService = new HealingService(repository, rcaServiceClient, realActionExecutor);
 
         // Simule le comportement de JPA : save() renvoie l'entité telle quelle
         when(repository.save(any(HealingAction.class))).thenAnswer(inv -> inv.getArgument(0));

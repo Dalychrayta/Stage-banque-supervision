@@ -39,6 +39,7 @@ public class ResourceService {
             existing.setEnvironment(request.getEnvironment());
             existing.setDescription(request.getDescription());
             existing.setTags(request.getTags());
+            if (request.getSimulated() != null) existing.setSimulated(request.getSimulated());
             existing.setLastSeen(LocalDateTime.now());
             Resource saved = resourceRepository.save(existing);
             return toDTO(saved);
@@ -54,6 +55,7 @@ public class ResourceService {
                 .environment(request.getEnvironment())
                 .description(request.getDescription())
                 .tags(request.getTags())
+                .simulated(request.getSimulated() != null ? request.getSimulated() : true)
                 .status(ResourceStatus.UNKNOWN)
                 .lastSeen(LocalDateTime.now())
                 .build();
@@ -139,6 +141,7 @@ public class ResourceService {
                 .lastSeen(r.getLastSeen())
                 .createdAt(r.getCreatedAt())
                 .tags(r.getTags())
+                .simulated(r.getSimulated())
                 .build();
     }
 }

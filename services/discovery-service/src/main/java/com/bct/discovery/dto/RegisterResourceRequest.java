@@ -23,4 +23,5 @@ public class RegisterResourceRequest {
     private String environment;
     private String description;
     private String tags;
+    private Boolean simulated;
 }

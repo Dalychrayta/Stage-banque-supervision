@@ -27,4 +27,5 @@ public class ResourceDTO {
     private LocalDateTime lastSeen;
     private LocalDateTime createdAt;
     private String tags;
+    private Boolean simulated;
 }

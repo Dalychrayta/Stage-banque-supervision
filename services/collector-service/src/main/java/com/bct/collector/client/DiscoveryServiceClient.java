@@ -22,14 +22,18 @@ public class DiscoveryServiceClient {
     }
 
     public void register(String resourceId, String name, String type) {
+        register(resourceId, name, type, true);
+    }
+
+    public void register(String resourceId, String name, String type, boolean simulated) {
         try {
             webClient.post()
                     .uri("/api/resources/register")
-                    .bodyValue(Map.of("resourceId", resourceId, "name", name, "type", type))
+                    .bodyValue(Map.of("resourceId", resourceId, "name", name, "type", type, "simulated", simulated))
                     .retrieve()
                     .toBodilessEntity()
                     .block();
-            log.info("Ressource enregistrée auprès du Discovery Service: {}", resourceId);
+            log.info("Ressource enregistrée auprès du Discovery Service: {} (simulated={})", resourceId, simulated);
         } catch (Exception e) {
             log.warn("Impossible d'enregistrer {} auprès du Discovery Service: {}", resourceId, e.getMessage());
         }

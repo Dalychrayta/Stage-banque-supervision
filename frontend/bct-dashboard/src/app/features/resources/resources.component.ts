@@ -31,11 +31,17 @@ import { Resource } from '../../core/models/resource.model';
       <p-table [value]="filtered" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10,25,50]"
                styleClass="p-datatable-gridlines" [loading]="loading">
         <ng-template pTemplate="header">
-          <tr><th>Nom</th><th>Type</th><th>Environnement</th><th>IP</th><th>Statut</th><th>Dernière activité</th></tr>
+          <tr><th>Nom</th><th>Source</th><th>Type</th><th>Environnement</th><th>IP</th><th>Statut</th><th>Dernière activité</th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-r>
           <tr>
             <td><strong>{{ r.name }}</strong><br><small class="text-muted">{{ r.resourceId }}</small></td>
+            <td>
+              <span [class]="r.simulated === false ? 'source-badge source-real' : 'source-badge source-sim'">
+                <i [class]="r.simulated === false ? 'pi pi-bolt' : 'pi pi-sliders-h'"></i>
+                {{ r.simulated === false ? 'RÉEL' : 'SIMULÉ' }}
+              </span>
+            </td>
             <td><span class="type-badge">{{ r.type }}</span></td>
             <td>{{ r.environment }}</td>
             <td class="font-mono">{{ r.ipAddress || r.host }}</td>
@@ -48,7 +54,7 @@ import { Resource } from '../../core/models/resource.model';
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="6" style="text-align:center;padding:2rem">Aucune ressource trouvée</td></tr>
+          <tr><td colspan="7" style="text-align:center;padding:2rem">Aucune ressource trouvée</td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -63,6 +69,9 @@ import { Resource } from '../../core/models/resource.model';
     .status-unknown     { background: #f7fafc; color: #718096; }
     .status-maintenance { background: #ebf8ff; color: #3182ce; }
     .type-badge { background: #edf2f7; color: #4a5568; padding: .2rem .5rem; border-radius: 6px; font-size: .75rem; }
+    .source-badge { padding: .25rem .6rem; border-radius: 12px; font-size: .7rem; font-weight: 700; display: inline-flex; align-items: center; gap: .3rem; letter-spacing: .02em; }
+    .source-real { background: #ebf8ff; color: #2b6cb0; }
+    .source-sim  { background: #f7fafc; color: #a0aec0; }
     .font-mono  { font-family: monospace; font-size: .85rem; }
     .text-muted { color: #a0aec0; font-size: .75rem; }
   `]

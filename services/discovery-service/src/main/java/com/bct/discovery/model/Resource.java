@@ -62,11 +62,17 @@ public class Resource {
     @Column(name = "TAGS", length = 500)
     private String tags; // JSON string: ["web","payment"]
 
+    // true = données générées (SimulatorScheduler) ; false = ressource réelle
+    // surveillée pour de vrai (ex. srv-002 / PlatformeBack).
+    @Column(name = "SIMULATED")
+    private Boolean simulated;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (status == null) status = ResourceStatus.UNKNOWN;
+        if (simulated == null) simulated = true;
     }
 
     @PreUpdate

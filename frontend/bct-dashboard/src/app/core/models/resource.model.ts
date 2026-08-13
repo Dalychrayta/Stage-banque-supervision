@@ -15,6 +15,7 @@ export interface Resource {
   lastSeen: string;
   createdAt: string;
   tags: string;
+  simulated: boolean;
 }
 
 export interface ResourceStats {

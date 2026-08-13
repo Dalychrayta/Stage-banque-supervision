@@ -29,7 +29,8 @@ public class SimulatorScheduler {
     private final DiscoveryServiceClient discoveryClient;
     private final Random random = new Random();
 
-    private static final List<String[]> SIMULATED_RESOURCES = List.of(
+    // Toutes les ressources connues du Discovery Service (inclut la cible réelle srv-002).
+    private static final List<String[]> ALL_RESOURCES = List.of(
             new String[]{"srv-001", "payment-server-01", "SERVER"},
             new String[]{"srv-002", "auth-server-01", "SERVER"},
             new String[]{"app-001", "banking-api", "APPLICATION"},
@@ -37,13 +38,20 @@ public class SimulatorScheduler {
             new String[]{"db-001", "oracle-primary", "DATABASE"}
     );
 
+    // srv-002 (auth-server-01) n'est plus simulé : ses métriques viennent d'une
+    // vraie instance (PlatformeBack), collectées par RealTargetCollector.
+    private static final List<String[]> SIMULATED_RESOURCES = ALL_RESOURCES.stream()
+            .filter(r -> !r[0].equals("srv-002"))
+            .toList();
+
     @EventListener(ApplicationReadyEvent.class)
     public void registerSimulatedResources() {
-        for (String[] resource : SIMULATED_RESOURCES) {
-            discoveryClient.register(resource[0], resource[1], resource[2]);
+        for (String[] resource : ALL_RESOURCES) {
+            boolean simulated = !resource[0].equals("srv-002");
+            discoveryClient.register(resource[0], resource[1], resource[2], simulated);
             discoveryClient.updateStatus(resource[0], "UP");
         }
-        log.info("{} ressources simulées enregistrées auprès du Discovery Service", SIMULATED_RESOURCES.size());
+        log.info("{} ressources enregistrées auprès du Discovery Service", ALL_RESOURCES.size());
     }
 
     @Scheduled(fixedDelayString = "${collector.metrics.interval-ms:30000}")
