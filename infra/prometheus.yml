@@ -6,17 +6,18 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # Les services Spring Boot sont lancés localement pour le moment.
-  # host.docker.internal permet au conteneur Prometheus de les atteindre sous Docker Desktop.
+  # Mode Docker complet : les services BCT tournent comme conteneurs sur le
+  # même réseau que Prometheus, donc on les atteint par leur nom de service
+  # (défini dans docker-compose.yml), pas par host.docker.internal.
   - job_name: bct-services
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
-          - host.docker.internal:8080
-          - host.docker.internal:8081
-          - host.docker.internal:8082
-          - host.docker.internal:8083
-          - host.docker.internal:8084
+          - api-gateway:8080
+          - discovery-service:8081
+          - collector-service:8082
+          - rca-service:8083
+          - auto-healing-service:8084
 
   # Cible réelle (PlatformeBack, ancien projet relancé comme serveur de test réel)
   - job_name: real-target
