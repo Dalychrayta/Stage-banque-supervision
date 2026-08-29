@@ -2,7 +2,6 @@ pipeline {
     agent none
 
     options {
-        timestamps()
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
@@ -51,6 +50,27 @@ pipeline {
                     steps { dir('services/rca-service') { sh 'mvn -B test' } }
                     post {
                         always { junit testResults: 'services/rca-service/target/surefire-reports/*.xml', allowEmptyResults: true }
+                    }
+                }
+                stage('collector-service') {
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    steps { dir('services/collector-service') { sh 'mvn -B test' } }
+                    post {
+                        always { junit testResults: 'services/collector-service/target/surefire-reports/*.xml', allowEmptyResults: true }
+                    }
+                }
+                stage('auto-healing-service') {
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    steps { dir('services/auto-healing-service') { sh 'mvn -B test' } }
+                    post {
+                        always { junit testResults: 'services/auto-healing-service/target/surefire-reports/*.xml', allowEmptyResults: true }
+                    }
+                }
+                stage('api-gateway') {
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    steps { dir('services/api-gateway') { sh 'mvn -B test' } }
+                    post {
+                        always { junit testResults: 'services/api-gateway/target/surefire-reports/*.xml', allowEmptyResults: true }
                     }
                 }
             }
