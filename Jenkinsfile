@@ -3,6 +3,7 @@ pipeline {
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
     }
 
     stages {
@@ -109,7 +110,7 @@ pipeline {
         // Tourne sur le nœud Jenkins lui-même (pas un agent docker) car c'est
         // là que le CLI docker + le socket de l'hôte sont disponibles.
         stage('Build — images Docker') {
-            agent { label 'built-in' }
+            agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
             steps {
                 dir('bct-images') {
                     checkout scm
