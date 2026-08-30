@@ -91,8 +91,7 @@ class RcaServiceTest {
 
         IncidentAnalysis result = rcaService.analyzeAnomaly(event);
 
-        // TEST DÉLIBÉRÉMENT CASSÉ — vérification que Jenkins détecte vraiment un échec
-        verify(repository, times(99)).save(any(IncidentAnalysis.class));
+        verify(repository, times(1)).save(any(IncidentAnalysis.class));
         verify(rcaResultProducer, times(1)).sendRcaResult(result);
     }
 
