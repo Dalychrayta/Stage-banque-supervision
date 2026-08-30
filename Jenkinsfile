@@ -10,27 +10,27 @@ pipeline {
         stage('Build — services Spring Boot') {
             parallel {
                 stage('eureka-server') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-eureka-server' } }
                     steps { dir('services/eureka-server') { sh 'mvn -B compile' } }
                 }
                 stage('api-gateway') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-api-gateway' } }
                     steps { dir('services/api-gateway') { sh 'mvn -B compile' } }
                 }
                 stage('discovery-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-discovery-service' } }
                     steps { dir('services/discovery-service') { sh 'mvn -B compile' } }
                 }
                 stage('collector-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-collector-service' } }
                     steps { dir('services/collector-service') { sh 'mvn -B compile' } }
                 }
                 stage('rca-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-rca-service' } }
                     steps { dir('services/rca-service') { sh 'mvn -B compile' } }
                 }
                 stage('auto-healing-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-auto-healing-service' } }
                     steps { dir('services/auto-healing-service') { sh 'mvn -B compile' } }
                 }
             }
@@ -39,35 +39,35 @@ pipeline {
         stage('Test — services Spring Boot') {
             parallel {
                 stage('discovery-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-discovery-service' } }
                     steps { dir('services/discovery-service') { sh 'mvn -B test' } }
                     post {
                         always { junit testResults: 'services/discovery-service/target/surefire-reports/*.xml', allowEmptyResults: true }
                     }
                 }
                 stage('rca-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-rca-service' } }
                     steps { dir('services/rca-service') { sh 'mvn -B test' } }
                     post {
                         always { junit testResults: 'services/rca-service/target/surefire-reports/*.xml', allowEmptyResults: true }
                     }
                 }
                 stage('collector-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-collector-service' } }
                     steps { dir('services/collector-service') { sh 'mvn -B test' } }
                     post {
                         always { junit testResults: 'services/collector-service/target/surefire-reports/*.xml', allowEmptyResults: true }
                     }
                 }
                 stage('auto-healing-service') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-auto-healing-service' } }
                     steps { dir('services/auto-healing-service') { sh 'mvn -B test' } }
                     post {
                         always { junit testResults: 'services/auto-healing-service/target/surefire-reports/*.xml', allowEmptyResults: true }
                     }
                 }
                 stage('api-gateway') {
-                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2' } }
+                    agent { docker { image 'maven:3.9-eclipse-temurin-21'; args '-v maven-repo:/root/.m2'; customWorkspace 'ws-api-gateway' } }
                     steps { dir('services/api-gateway') { sh 'mvn -B test' } }
                     post {
                         always { junit testResults: 'services/api-gateway/target/surefire-reports/*.xml', allowEmptyResults: true }
@@ -77,7 +77,7 @@ pipeline {
         }
 
         stage('Test — Prediction Engine (Python)') {
-            agent { docker { image 'python:3.12-slim' } }
+            agent { docker { image 'python:3.12-slim'; customWorkspace 'ws-prediction-engine' } }
             steps {
                 dir('services/prediction-engine') {
                     sh '''
@@ -92,7 +92,7 @@ pipeline {
         }
 
         stage('Build — Frontend Angular') {
-            agent { docker { image 'node:22-alpine' } }
+            agent { docker { image 'node:22-alpine'; customWorkspace 'ws-frontend' } }
             steps {
                 dir('frontend/bct-dashboard') {
                     sh '''
