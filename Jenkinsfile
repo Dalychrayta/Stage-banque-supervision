@@ -102,6 +102,35 @@ pipeline {
                 }
             }
         }
+
+        // Ne s'exécute que si toutes les compilations et tous les tests ci-dessus
+        // ont réussi — jamais construire (encore moins déployer) une image à
+        // partir d'un code qui ne compile pas ou dont les tests échouent.
+        // Tourne sur le nœud Jenkins lui-même (pas un agent docker) car c'est
+        // là que le CLI docker + le socket de l'hôte sont disponibles.
+        stage('Build — images Docker') {
+            agent { label 'built-in' }
+            steps {
+                dir('bct-images') {
+                    checkout scm
+                    sh '''
+                        docker build -t bct/eureka-server:${BUILD_NUMBER}       -t bct/eureka-server:latest       services/eureka-server
+                        docker build -t bct/api-gateway:${BUILD_NUMBER}        -t bct/api-gateway:latest        services/api-gateway
+                        docker build -t bct/discovery-service:${BUILD_NUMBER}  -t bct/discovery-service:latest  services/discovery-service
+                        docker build -t bct/collector-service:${BUILD_NUMBER}  -t bct/collector-service:latest  services/collector-service
+                        docker build -t bct/rca-service:${BUILD_NUMBER}        -t bct/rca-service:latest        services/rca-service
+                        docker build -t bct/auto-healing-service:${BUILD_NUMBER} -t bct/auto-healing-service:latest services/auto-healing-service
+                        docker build -t bct/prediction-engine:${BUILD_NUMBER}  -t bct/prediction-engine:latest  services/prediction-engine
+                        docker build -t bct/frontend:${BUILD_NUMBER}           -t bct/frontend:latest           frontend/bct-dashboard
+                    '''
+                }
+            }
+            post {
+                success {
+                    echo "8 images Docker construites et tagguées bct/*:${BUILD_NUMBER} — prêtes pour docker-compose ou un registre."
+                }
+            }
+        }
     }
 
     post {
