@@ -115,14 +115,18 @@ pipeline {
                 dir('bct-images') {
                     checkout scm
                     sh '''
-                        docker build -t bct/eureka-server:${BUILD_NUMBER}       -t bct/eureka-server:latest       services/eureka-server
-                        docker build -t bct/api-gateway:${BUILD_NUMBER}        -t bct/api-gateway:latest        services/api-gateway
-                        docker build -t bct/discovery-service:${BUILD_NUMBER}  -t bct/discovery-service:latest  services/discovery-service
-                        docker build -t bct/collector-service:${BUILD_NUMBER}  -t bct/collector-service:latest  services/collector-service
-                        docker build -t bct/rca-service:${BUILD_NUMBER}        -t bct/rca-service:latest        services/rca-service
-                        docker build -t bct/auto-healing-service:${BUILD_NUMBER} -t bct/auto-healing-service:latest services/auto-healing-service
-                        docker build -t bct/prediction-engine:${BUILD_NUMBER}  -t bct/prediction-engine:latest  services/prediction-engine
-                        docker build -t bct/frontend:${BUILD_NUMBER}           -t bct/frontend:latest           frontend/bct-dashboard
+                        # --memory borne chaque build pour éviter qu'une seule image
+                        # (compilation Maven ou résolution pip) ne sature toute la VM
+                        # Docker et ne fasse planter le moteur entier (vécu en pratique).
+                        DOCKER_BUILD_LIMITS="--memory=2g --memory-swap=3g"
+                        docker build $DOCKER_BUILD_LIMITS -t bct/eureka-server:${BUILD_NUMBER}       -t bct/eureka-server:latest       services/eureka-server
+                        docker build $DOCKER_BUILD_LIMITS -t bct/api-gateway:${BUILD_NUMBER}        -t bct/api-gateway:latest        services/api-gateway
+                        docker build $DOCKER_BUILD_LIMITS -t bct/discovery-service:${BUILD_NUMBER}  -t bct/discovery-service:latest  services/discovery-service
+                        docker build $DOCKER_BUILD_LIMITS -t bct/collector-service:${BUILD_NUMBER}  -t bct/collector-service:latest  services/collector-service
+                        docker build $DOCKER_BUILD_LIMITS -t bct/rca-service:${BUILD_NUMBER}        -t bct/rca-service:latest        services/rca-service
+                        docker build $DOCKER_BUILD_LIMITS -t bct/auto-healing-service:${BUILD_NUMBER} -t bct/auto-healing-service:latest services/auto-healing-service
+                        docker build $DOCKER_BUILD_LIMITS -t bct/prediction-engine:${BUILD_NUMBER}  -t bct/prediction-engine:latest  services/prediction-engine
+                        docker build $DOCKER_BUILD_LIMITS -t bct/frontend:${BUILD_NUMBER}           -t bct/frontend:latest           frontend/bct-dashboard
                     '''
                 }
             }
