@@ -109,8 +109,14 @@ pipeline {
         // partir d'un code qui ne compile pas ou dont les tests échouent.
         // Tourne sur le nœud Jenkins lui-même (pas un agent docker) car c'est
         // là que le CLI docker + le socket de l'hôte sont disponibles.
+        // Les images sont taguées directement au nom du registre GHCR : pas
+        // besoin d'un nom local intermédiaire (bct/*) puis d'un retag.
         stage('Build — images Docker') {
             agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
+            environment {
+                REGISTRY  = 'ghcr.io'
+                NAMESPACE = 'dalychrayta'
+            }
             steps {
                 dir('bct-images') {
                     checkout scm
@@ -119,27 +125,98 @@ pipeline {
                         # (compilation Maven ou résolution pip) ne sature toute la VM
                         # Docker et ne fasse planter le moteur entier (vécu en pratique).
                         DOCKER_BUILD_LIMITS="--memory=2g --memory-swap=3g"
-                        docker build $DOCKER_BUILD_LIMITS -t bct/eureka-server:${BUILD_NUMBER}       -t bct/eureka-server:latest       services/eureka-server
-                        docker build $DOCKER_BUILD_LIMITS -t bct/api-gateway:${BUILD_NUMBER}        -t bct/api-gateway:latest        services/api-gateway
-                        docker build $DOCKER_BUILD_LIMITS -t bct/discovery-service:${BUILD_NUMBER}  -t bct/discovery-service:latest  services/discovery-service
-                        docker build $DOCKER_BUILD_LIMITS -t bct/collector-service:${BUILD_NUMBER}  -t bct/collector-service:latest  services/collector-service
-                        docker build $DOCKER_BUILD_LIMITS -t bct/rca-service:${BUILD_NUMBER}        -t bct/rca-service:latest        services/rca-service
-                        docker build $DOCKER_BUILD_LIMITS -t bct/auto-healing-service:${BUILD_NUMBER} -t bct/auto-healing-service:latest services/auto-healing-service
-                        docker build $DOCKER_BUILD_LIMITS -t bct/prediction-engine:${BUILD_NUMBER}  -t bct/prediction-engine:latest  services/prediction-engine
-                        docker build $DOCKER_BUILD_LIMITS -t bct/frontend:${BUILD_NUMBER}           -t bct/frontend:latest           frontend/bct-dashboard
+                        IMG=${REGISTRY}/${NAMESPACE}/bct
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-eureka-server:${BUILD_NUMBER}        -t ${IMG}-eureka-server:latest        services/eureka-server
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-api-gateway:${BUILD_NUMBER}         -t ${IMG}-api-gateway:latest          services/api-gateway
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-discovery-service:${BUILD_NUMBER}   -t ${IMG}-discovery-service:latest    services/discovery-service
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-collector-service:${BUILD_NUMBER}   -t ${IMG}-collector-service:latest    services/collector-service
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-rca-service:${BUILD_NUMBER}         -t ${IMG}-rca-service:latest          services/rca-service
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-auto-healing-service:${BUILD_NUMBER} -t ${IMG}-auto-healing-service:latest services/auto-healing-service
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-prediction-engine:${BUILD_NUMBER}   -t ${IMG}-prediction-engine:latest    services/prediction-engine
+                        docker build $DOCKER_BUILD_LIMITS -t ${IMG}-frontend:${BUILD_NUMBER}            -t ${IMG}-frontend:latest             frontend/bct-dashboard
                     '''
                 }
             }
             post {
                 success {
-                    echo "8 images Docker construites et tagguées bct/*:${BUILD_NUMBER} — prêtes pour docker-compose ou un registre."
+                    echo "8 images Docker construites et tagguées ${REGISTRY}/${NAMESPACE}/bct-*:${BUILD_NUMBER} et :latest."
+                }
+            }
+        }
+
+        // Pousse les 8 images vers GitHub Container Registry. N'importe quelle
+        // machine (ou un vrai serveur) peut ensuite les récupérer avec un
+        // simple `docker pull` — ce n'est plus piégé sur ce seul poste.
+        stage('Push — registre GHCR') {
+            agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
+            environment {
+                REGISTRY  = 'ghcr.io'
+                NAMESPACE = 'dalychrayta'
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'ghcr-credential', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
+                    sh '''
+                        echo "$GHCR_TOKEN" | docker login ${REGISTRY} -u "$GHCR_USER" --password-stdin
+                        IMG=${REGISTRY}/${NAMESPACE}/bct
+                        for svc in eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend; do
+                            docker push ${IMG}-${svc}:${BUILD_NUMBER}
+                            docker push ${IMG}-${svc}:latest
+                        done
+                        docker logout ${REGISTRY}
+                    '''
+                }
+            }
+            post {
+                success {
+                    // Nettoyage disque : le tag numéroté du build reste dans le
+                    // registre (historique complet), inutile de le garder en
+                    // double en local — on ne conserve que :latest sur ce poste.
+                    sh '''
+                        IMG=${REGISTRY}/${NAMESPACE}/bct
+                        for svc in eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend; do
+                            docker rmi ${IMG}-${svc}:${BUILD_NUMBER} || true
+                        done
+                    '''
+                }
+            }
+        }
+
+        // Déploiement réel : récupère les images qu'on vient de pousser et
+        // (re)démarre uniquement les services applicatifs dont l'image a
+        // changé — docker compose laisse l'infra déjà saine (oracle, kafka,
+        // prometheus...) intacte si sa configuration n'a pas bougé.
+        stage('Deploy') {
+            agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
+            options { timeout(time: 10, unit: 'MINUTES') }
+            environment {
+                REGISTRY = 'ghcr.io'
+            }
+            steps {
+                // Les paquets GHCR sont privés par défaut, et le stage précédent
+                // s'est déconnecté à la fin — il faut se reconnecter ici pour
+                // que le `pull` soit autorisé.
+                withCredentials([usernamePassword(credentialsId: 'ghcr-credential', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
+                    dir('bct-images/infra') {
+                        sh '''
+                            echo "$GHCR_TOKEN" | docker login ${REGISTRY} -u "$GHCR_USER" --password-stdin
+                            SERVICES="eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend"
+                            docker compose pull $SERVICES
+                            docker compose up -d $SERVICES
+                            docker logout ${REGISTRY}
+                        '''
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "Déploiement terminé — les 8 services applicatifs tournent avec les images ghcr.io/dalychrayta/bct-*:latest fraîchement poussées."
                 }
             }
         }
     }
 
     post {
-        success { echo 'Build + tests OK sur tous les services.' }
+        success { echo 'Build + tests + images + déploiement OK sur tous les services.' }
         failure { echo 'Echec du pipeline — voir les logs des étapes ci-dessus.' }
     }
 }

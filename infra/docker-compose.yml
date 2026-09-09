@@ -86,6 +86,7 @@ services:
 
   eureka-server:
     build: ../services/eureka-server
+    image: ghcr.io/dalychrayta/bct-eureka-server:latest
     container_name: bct-eureka-server
     environment:
       JAVA_TOOL_OPTIONS: "-Xmx200m"
@@ -95,6 +96,7 @@ services:
 
   api-gateway:
     build: ../services/api-gateway
+    image: ghcr.io/dalychrayta/bct-api-gateway:latest
     container_name: bct-api-gateway
     depends_on:
       - eureka-server
@@ -107,6 +109,7 @@ services:
 
   discovery-service:
     build: ../services/discovery-service
+    image: ghcr.io/dalychrayta/bct-discovery-service:latest
     container_name: bct-discovery-service
     depends_on:
       oracle:
@@ -126,6 +129,7 @@ services:
 
   collector-service:
     build: ../services/collector-service
+    image: ghcr.io/dalychrayta/bct-collector-service:latest
     container_name: bct-collector-service
     depends_on:
       oracle:
@@ -151,6 +155,7 @@ services:
 
   rca-service:
     build: ../services/rca-service
+    image: ghcr.io/dalychrayta/bct-rca-service:latest
     container_name: bct-rca-service
     depends_on:
       oracle:
@@ -170,6 +175,7 @@ services:
 
   auto-healing-service:
     build: ../services/auto-healing-service
+    image: ghcr.io/dalychrayta/bct-auto-healing-service:latest
     container_name: bct-auto-healing-service
     depends_on:
       oracle:
@@ -189,6 +195,7 @@ services:
 
   prediction-engine:
     build: ../services/prediction-engine
+    image: ghcr.io/dalychrayta/bct-prediction-engine:latest
     container_name: bct-prediction-engine
     mem_limit: 400m
     ports:
@@ -196,6 +203,7 @@ services:
 
   frontend:
     build: ../frontend/bct-dashboard
+    image: ghcr.io/dalychrayta/bct-frontend:latest
     container_name: bct-frontend
     depends_on:
       - api-gateway
