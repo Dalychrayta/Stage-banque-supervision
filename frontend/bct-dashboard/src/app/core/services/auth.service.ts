@@ -44,6 +44,18 @@ export class AuthService {
     return this.isBrowser ? sessionStorage.getItem(STORAGE_KEY) : null;
   }
 
+  /** Nom d'utilisateur porté par le jeton JWT (claim "sub"), ou null. */
+  getUsername(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   private setToken(token: string): void {
     if (this.isBrowser) sessionStorage.setItem(STORAGE_KEY, token);
   }

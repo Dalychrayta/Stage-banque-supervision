@@ -149,6 +149,28 @@ public class RcaService {
         return repository.findByStatusOrderByAnalyzedAtDesc(AnalysisStatus.OPEN);
     }
 
+    /**
+     * Correction manuelle de la catégorie de cause par un opérateur, quand le
+     * diagnostic automatique (règles à seuils) est faux. Ces corrections
+     * constituent le vrai jeu d'étiquettes vérifiées par un humain — la base
+     * nécessaire pour, plus tard, entraîner un classifieur de cause au lieu
+     * de s'appuyer uniquement sur des règles.
+     */
+    @Transactional
+    public IncidentAnalysis correctCategory(Long id, String newCategory, String correctedBy) {
+        if (newCategory == null || newCategory.isBlank()) {
+            throw new IllegalArgumentException("Catégorie de correction vide");
+        }
+        IncidentAnalysis analysis = repository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Incident non trouvé: " + id));
+        analysis.setCorrectedCategory(newCategory.trim());
+        analysis.setCorrectedBy(correctedBy != null ? correctedBy : "inconnu");
+        analysis.setCorrectedAt(LocalDateTime.now());
+        log.info("Incident #{} : cause corrigée de '{}' vers '{}' par {}",
+                id, analysis.getCauseCategory(), newCategory, correctedBy);
+        return repository.save(analysis);
+    }
+
     @Transactional
     public IncidentAnalysis resolve(Long id) {
         IncidentAnalysis analysis = repository.findById(id)

@@ -146,6 +146,40 @@ class RcaServiceTest {
     }
 
     @Test
+    void correctCategory_shouldOverrideAutomaticDiagnosisAndBecomeEffective() {
+        IncidentAnalysis existing = IncidentAnalysis.builder()
+                .id(7L)
+                .resourceId("srv-002")
+                .causeCategory("CPU_SATURATION")
+                .build();
+        when(repository.findById(7L)).thenReturn(java.util.Optional.of(existing));
+        when(repository.save(any(IncidentAnalysis.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        IncidentAnalysis corrected = rcaService.correctCategory(7L, "MEMORY_EXHAUSTION", "admin");
+
+        assertThat(corrected.getCorrectedCategory()).isEqualTo("MEMORY_EXHAUSTION");
+        assertThat(corrected.getCorrectedBy()).isEqualTo("admin");
+        assertThat(corrected.getCorrectedAt()).isNotNull();
+        assertThat(corrected.getCauseCategory()).isEqualTo("CPU_SATURATION"); // le diagnostic d'origine est conservé
+        assertThat(corrected.getEffectiveCategory()).isEqualTo("MEMORY_EXHAUSTION"); // mais la correction fait foi
+    }
+
+    @Test
+    void correctCategory_shouldRejectEmptyCategory() {
+        assertThatThrownBy(() -> rcaService.correctCategory(7L, "  ", "admin"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(repository, never()).save(any(IncidentAnalysis.class));
+    }
+
+    @Test
+    void correctCategory_shouldThrowWhenIncidentNotFound() {
+        when(repository.findById(999L)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> rcaService.correctCategory(999L, "DISK_FULL", "admin"))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
     void getOpenIncidents_shouldDelegateToRepository() {
         List<IncidentAnalysis> expected = List.of(IncidentAnalysis.builder().id(1L).build());
         when(repository.findByStatusOrderByAnalyzedAtDesc(AnalysisStatus.OPEN)).thenReturn(expected);

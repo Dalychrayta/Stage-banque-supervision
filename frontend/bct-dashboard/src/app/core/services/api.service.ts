@@ -74,6 +74,10 @@ export class ApiService {
     return this.http.patch<IncidentAnalysis>(`${API_BASE}/rca/${id}/resolve`, {});
   }
 
+  correctIncidentCategory(id: number, category: string, correctedBy: string): Observable<IncidentAnalysis> {
+    return this.http.patch<IncidentAnalysis>(`${API_BASE}/rca/${id}/category`, { category, correctedBy });
+  }
+
   getRcaStats(): Observable<RcaStats> {
     return this.http.get<RcaStats>(`${API_BASE}/rca/stats`);
   }

@@ -6,15 +6,17 @@ import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { ChipModule } from 'primeng/chip';
 import { MessageService } from 'primeng/api';
+import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { ApiService } from '../../core/services/api.service';
-import { IncidentAnalysis, RcaStats } from '../../core/models/incident.model';
+import { AuthService } from '../../core/services/auth.service';
+import { IncidentAnalysis, RcaStats, CAUSE_CATEGORIES } from '../../core/models/incident.model';
 import { interval, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-anomalies',
   standalone: true,
-  imports: [CommonModule, TableModule, ButtonModule, ToastModule, ProgressBarModule, ChipModule, HeaderComponent],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, ToastModule, ProgressBarModule, ChipModule, HeaderComponent],
   providers: [MessageService],
   template: `
     <app-header title="Anomalies détectées"></app-header>
@@ -54,7 +56,23 @@ import { interval, Subscription } from 'rxjs';
                 <p-chip *ngFor="let m of parseMetrics(i.anomalousMetrics)" [label]="m"></p-chip>
               </div>
             </td>
-            <td><span class="category-tag">{{ i.causeCategory }}</span></td>
+            <td>
+              <div class="cause-cell">
+                <ng-container *ngIf="editingCategoryId !== i.id; else editCat">
+                  <span class="category-tag" [class.corrected]="i.correctedCategory">{{ i.effectiveCategory || i.causeCategory }}</span>
+                  <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm cat-edit"
+                          title="Corriger la cause" (click)="startEditCategory(i)"></button>
+                  <small *ngIf="i.correctedBy" class="corrected-by" title="Corrigé manuellement">corrigé par {{ i.correctedBy }}</small>
+                </ng-container>
+                <ng-template #editCat>
+                  <select [(ngModel)]="editCategoryValue" class="cat-select">
+                    <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+                  </select>
+                  <button pButton type="button" icon="pi pi-check" severity="success" class="p-button-sm" (click)="saveCategory(i)"></button>
+                  <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm" (click)="editingCategoryId = null"></button>
+                </ng-template>
+              </div>
+            </td>
             <td>{{ (i.confidenceScore * 100) | number:'1.0-0' }}%</td>
             <td><span [class]="'stat-dot stat-' + i.status?.toLowerCase()">{{ i.status }}</span></td>
             <td>{{ i.analyzedAt | date:'dd/MM HH:mm' }}</td>
@@ -93,6 +111,11 @@ import { interval, Subscription } from 'rxjs';
     .score-bar { display: flex; align-items: center; gap: .5rem; font-size: .8rem; }
     .chips-cell { display: flex; flex-wrap: wrap; gap: .25rem; }
     .category-tag { background: #edf2f7; color: #2d3748; padding: .2rem .5rem; border-radius: 6px; font-size: .75rem; font-family: monospace; }
+    .category-tag.corrected { background: #ebf8ff; color: #2b6cb0; }
+    .cause-cell { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
+    .cat-edit { padding: 0 .25rem !important; }
+    .corrected-by { color: #3182ce; font-size: .68rem; }
+    .cat-select { font-size: .75rem; padding: .15rem .3rem; border: 1px solid #cbd5e0; border-radius: 4px; font-family: monospace; }
     .stat-dot { font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: 8px; }
     .stat-open        { background: #fff5f5; color: #e53e3e; }
     .stat-resolved    { background: #f0fff4; color: #38a169; }
@@ -112,10 +135,17 @@ export class AnomaliesComponent implements OnInit, OnDestroy {
   expandedRows: Record<string, boolean> = {};
   totalRecords = 0;
   pageSize = 15;
+  readonly categories = CAUSE_CATEGORIES;
+  editingCategoryId: number | null = null;
+  editCategoryValue = '';
   private currentPage = 0;
   private sub = new Subscription();
 
-  constructor(private api: ApiService, private msg: MessageService, @Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+    private msg: MessageService,
+    @Inject(PLATFORM_ID) private platformId: Object) {}
 
   ngOnInit(): void {
     this.api.getRcaStats().subscribe({ next: s => this.stats = s });
@@ -149,6 +179,32 @@ export class AnomaliesComponent implements OnInit, OnDestroy {
 
   parseMetrics(raw: string): string[] { try { return JSON.parse(raw) as string[]; } catch { return raw ? [raw] : []; } }
   getScorePercent(score: number): number { return Math.min(Math.abs(score) * 100, 100); }
+
+  startEditCategory(i: IncidentAnalysis): void {
+    this.editingCategoryId = i.id;
+    this.editCategoryValue = i.effectiveCategory || i.causeCategory;
+  }
+
+  saveCategory(i: IncidentAnalysis): void {
+    if (!this.editCategoryValue || this.editCategoryValue === (i.effectiveCategory || i.causeCategory)) {
+      this.editingCategoryId = null;
+      return;
+    }
+    const by = this.auth.getUsername() ?? 'inconnu';
+    this.api.correctIncidentCategory(i.id, this.editCategoryValue, by).subscribe({
+      next: updated => {
+        i.correctedCategory = updated.correctedCategory;
+        i.correctedBy = updated.correctedBy;
+        i.effectiveCategory = updated.effectiveCategory;
+        this.editingCategoryId = null;
+        this.msg.add({ severity: 'success', summary: 'Cause corrigée', detail: `Incident #${i.id} → ${this.editCategoryValue}` });
+      },
+      error: () => {
+        this.editingCategoryId = null;
+        this.msg.add({ severity: 'error', summary: 'Échec', detail: 'Correction non enregistrée' });
+      }
+    });
+  }
 
   resolve(incident: IncidentAnalysis): void {
     this.api.resolveIncident(incident.id).subscribe({

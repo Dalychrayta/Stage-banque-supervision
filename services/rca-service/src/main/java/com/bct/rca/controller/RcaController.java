@@ -45,6 +45,15 @@ public class RcaController {
         return ResponseEntity.ok(rcaService.resolve(id));
     }
 
+    /** Corriger manuellement la catégorie de cause d'un incident.
+     *  Body : { "category": "MEMORY_EXHAUSTION", "correctedBy": "admin" } */
+    @PatchMapping("/{id}/category")
+    public ResponseEntity<IncidentAnalysis> correctCategory(
+            @PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(
+                rcaService.correctCategory(id, body.get("category"), body.get("correctedBy")));
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Long>> getStats() {
         return ResponseEntity.ok(rcaService.getStats());

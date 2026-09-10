@@ -48,6 +48,19 @@ public class IncidentAnalysis {
     @Column(name = "CAUSE_CATEGORY", length = 100)
     private String causeCategory; // CPU_SATURATION, MEMORY_LEAK, NETWORK_ISSUE, etc.
 
+    // Correction manuelle par un opérateur quand le diagnostic automatique
+    // (règles) est faux. Quand renseignée, c'est CETTE valeur qui fait foi —
+    // et c'est le vrai matériau étiqueté pour entraîner plus tard un
+    // classifieur de cause (au lieu d'étiquettes générées par les règles).
+    @Column(name = "CORRECTED_CATEGORY", length = 100)
+    private String correctedCategory;
+
+    @Column(name = "CORRECTED_BY", length = 100)
+    private String correctedBy;
+
+    @Column(name = "CORRECTED_AT")
+    private LocalDateTime correctedAt;
+
     @Column(name = "CONFIDENCE_SCORE")
     private Double confidenceScore;
 
@@ -74,5 +87,12 @@ public class IncidentAnalysis {
     protected void onCreate() {
         if (analyzedAt == null) analyzedAt = LocalDateTime.now();
         if (status == null) status = AnalysisStatus.OPEN;
+    }
+
+    /** Catégorie qui fait foi : la correction de l'opérateur si elle existe,
+     *  sinon le diagnostic automatique. */
+    @Transient
+    public String getEffectiveCategory() {
+        return correctedCategory != null ? correctedCategory : causeCategory;
     }
 }

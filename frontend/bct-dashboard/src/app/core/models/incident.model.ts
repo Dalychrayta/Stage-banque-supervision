@@ -11,6 +11,10 @@ export interface IncidentAnalysis {
   anomalousMetrics: string;
   rootCause: string;
   causeCategory: string;
+  correctedCategory: string | null;
+  correctedBy: string | null;
+  correctedAt: string | null;
+  effectiveCategory: string;
   confidenceScore: number;
   correlatedLogs: string;
   recommendation: string;
@@ -19,6 +23,11 @@ export interface IncidentAnalysis {
   analyzedAt: string;
   resolvedAt: string;
 }
+
+export const CAUSE_CATEGORIES = [
+  'CPU_SATURATION', 'MEMORY_EXHAUSTION', 'DISK_FULL',
+  'HIGH_LATENCY', 'HIGH_ERROR_RATE', 'UNKNOWN'
+] as const;
 
 export interface HealingAction {
   id: number;
