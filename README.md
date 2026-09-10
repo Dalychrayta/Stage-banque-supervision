@@ -114,9 +114,9 @@ L'identité est gérée par **Keycloak** (conteneur `bct-keycloak`, realm `bct`,
 
 | Utilisateur | Mot de passe | Rôle |
 |---|---|---|
-| `viewer.bct` | `Viewer#2026` | VIEWER |
-| `operator.bct` | `Operator#2026` | OPERATOR |
-| `admin.bct` | `Admin#2026` | ADMIN |
+| `rh` | `dali1234` | VIEWER |
+| `operator` | `dali1234` | OPERATOR |
+| `admin` | `dali1234` | ADMIN |
 
 ### Secrets
 

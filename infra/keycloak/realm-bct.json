@@ -33,36 +33,36 @@
   ],
   "users": [
     {
-      "username": "viewer.bct",
+      "username": "rh",
       "enabled": true,
       "emailVerified": true,
-      "email": "viewer.bct@example.local",
-      "firstName": "Vue",
+      "email": "rh@example.local",
+      "firstName": "RH",
       "lastName": "Lecture",
       "requiredActions": [],
-      "credentials": [{ "type": "password", "value": "Viewer#2026", "temporary": false }],
+      "credentials": [{ "type": "password", "value": "dali1234", "temporary": false }],
       "realmRoles": ["VIEWER"]
     },
     {
-      "username": "operator.bct",
+      "username": "operator",
       "enabled": true,
       "emailVerified": true,
-      "email": "operator.bct@example.local",
+      "email": "operator@example.local",
       "firstName": "Op",
       "lastName": "Exploitation",
       "requiredActions": [],
-      "credentials": [{ "type": "password", "value": "Operator#2026", "temporary": false }],
+      "credentials": [{ "type": "password", "value": "dali1234", "temporary": false }],
       "realmRoles": ["OPERATOR"]
     },
     {
-      "username": "admin.bct",
+      "username": "admin",
       "enabled": true,
       "emailVerified": true,
-      "email": "admin.bct@example.local",
+      "email": "admin@example.local",
       "firstName": "Admin",
       "lastName": "Plateforme",
       "requiredActions": [],
-      "credentials": [{ "type": "password", "value": "Admin#2026", "temporary": false }],
+      "credentials": [{ "type": "password", "value": "dali1234", "temporary": false }],
       "realmRoles": ["ADMIN"]
     }
   ]
