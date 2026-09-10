@@ -16,26 +16,26 @@ services:
       timeout: 5s
       retries: 20
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.1
-    container_name: bct-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    mem_limit: 300m
-
+  # Kafka en mode KRaft : plus besoin de Zookeeper à côté (supprimé), Kafka
+  # gère lui-même sa coordination interne depuis la version 7.x de Confluent.
+  # Un conteneur en moins, et surtout : élimine le blocage rencontré plusieurs
+  # fois en pratique (Zookeeper gardant une inscription périmée d'un ancien
+  # Kafka après un arrêt brutal, empêchant Kafka de redémarrer tant qu'on ne
+  # redémarrait pas Zookeeper d'abord).
   kafka:
     image: confluentinc/cp-kafka:7.6.1
     container_name: bct-kafka
-    depends_on:
-      - zookeeper
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      CLUSTER_ID: "cT4XFJyZS4mFSVXkCgqRaA"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://kafka:29093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1

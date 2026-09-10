@@ -56,7 +56,7 @@ Pré-requis : JDK 21, Maven, Node 22+, Python 3.12, Docker Desktop (pour l'infra
 **1. Infrastructure (Oracle, Kafka, Prometheus, Loki, Grafana)**
 ```bash
 cd infra
-docker compose up -d oracle zookeeper kafka prometheus loki grafana
+docker compose up -d oracle kafka prometheus loki grafana
 ```
 
 **2. Services Spring Boot** (à lancer dans cet ordre — chacun dans son propre terminal)
