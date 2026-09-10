@@ -144,6 +144,39 @@ pipeline {
             }
         }
 
+        // Scan de vulnérabilités (Trivy) sur chaque image fraîchement construite,
+        // AVANT de la pousser sur le registre.
+        //
+        // IMPORTANT (constat honnête, pas caché) : un premier scan manuel a
+        // révélé de vraies CVE CRITICAL dans les dépendances actuelles
+        // (Tomcat embarqué par Spring Boot 3.4.4, BouncyCastle) — un vrai
+        // résultat de sécurité, mais qui toucherait alors systématiquement
+        // tous les services Java tant que les dépendances ne sont pas mises
+        // à jour (tâche séparée, pas encore faite). Rendre ce gate bloquant
+        // dès maintenant casserait tout le pipeline qui vient de fonctionner
+        // pour la première fois. Le scan reste donc PUREMENT INFORMATIF
+        // (--exit-code 0) le temps que ces dépendances soient traitées ;
+        // passer en bloquant (CRITICAL => échec) est le prochain pas logique
+        // une fois la mise à jour faite.
+        stage('Scan sécurité — Trivy') {
+            agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
+            environment {
+                REGISTRY  = 'ghcr.io'
+                NAMESPACE = 'dalychrayta'
+            }
+            options { timeout(time: 20, unit: 'MINUTES') }
+            steps {
+                sh '''
+                    IMG=${REGISTRY}/${NAMESPACE}/bct
+                    TRIVY="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:latest"
+                    for svc in eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend; do
+                        echo "=== Scan Trivy : ${svc} ==="
+                        $TRIVY image --timeout 10m --severity HIGH,CRITICAL --exit-code 0 --no-progress ${IMG}-${svc}:${BUILD_NUMBER}
+                    done
+                '''
+            }
+        }
+
         // Pousse les 8 images vers GitHub Container Registry. N'importe quelle
         // machine (ou un vrai serveur) peut ensuite les récupérer avec un
         // simple `docker pull` — ce n'est plus piégé sur ce seul poste.
