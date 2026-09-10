@@ -6,8 +6,8 @@ spring:
     name: rca-service
   datasource:
     url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:1521/XEPDB1
-    username: bct_user
-    password: bct_password
+    username: ${RCA_DB_USER:rca_user}
+    password: ${RCA_DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     hibernate:

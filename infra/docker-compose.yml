@@ -3,9 +3,10 @@ services:
     image: gvenzl/oracle-xe:21-slim
     container_name: bct-oracle
     environment:
-      ORACLE_PASSWORD: bct_password
-      APP_USER: bct_user
-      APP_USER_PASSWORD: bct_password
+      # Mot de passe SYS/SYSTEM — ne compte que pour une toute première
+      # initialisation du volume ; sur une base déjà existante (notre cas),
+      # le mot de passe réel a été changé à la main (ALTER USER).
+      ORACLE_PASSWORD: ${ORACLE_SYS_PASSWORD}
     ports:
       - "1521:1521"
     volumes:
@@ -123,6 +124,7 @@ services:
         condition: service_started
     environment:
       ORACLE_HOST: oracle
+      DISCOVERY_DB_PASSWORD: ${DISCOVERY_DB_PASSWORD}
       EUREKA_HOST: eureka-server
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JAVA_TOOL_OPTIONS: "-Xmx250m"
@@ -147,6 +149,7 @@ services:
         condition: service_started
     environment:
       ORACLE_HOST: oracle
+      COLLECTOR_DB_PASSWORD: ${COLLECTOR_DB_PASSWORD}
       EUREKA_HOST: eureka-server
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       PREDICTION_ENGINE_URL: http://prediction-engine:8000
@@ -169,6 +172,7 @@ services:
         condition: service_started
     environment:
       ORACLE_HOST: oracle
+      RCA_DB_PASSWORD: ${RCA_DB_PASSWORD}
       EUREKA_HOST: eureka-server
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JAVA_TOOL_OPTIONS: "-Xmx250m"
@@ -189,6 +193,7 @@ services:
         condition: service_started
     environment:
       ORACLE_HOST: oracle
+      HEALING_DB_PASSWORD: ${HEALING_DB_PASSWORD}
       EUREKA_HOST: eureka-server
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JAVA_TOOL_OPTIONS: "-Xmx250m"

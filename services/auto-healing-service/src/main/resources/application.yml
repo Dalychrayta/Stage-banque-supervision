@@ -6,8 +6,8 @@ spring:
     name: auto-healing-service
   datasource:
     url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:1521/XEPDB1
-    username: bct_user
-    password: bct_password
+    username: ${HEALING_DB_USER:healing_user}
+    password: ${HEALING_DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     hibernate:

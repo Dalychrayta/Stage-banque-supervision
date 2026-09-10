@@ -6,8 +6,8 @@ spring:
     name: collector-service
   datasource:
     url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:1521/XEPDB1
-    username: bct_user
-    password: bct_password
+    username: ${COLLECTOR_DB_USER:collector_user}
+    password: ${COLLECTOR_DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     hibernate:

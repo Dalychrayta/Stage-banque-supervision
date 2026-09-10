@@ -6,8 +6,8 @@ spring:
     name: discovery-service
   datasource:
     url: jdbc:oracle:thin:@${ORACLE_HOST:localhost}:1521/XEPDB1
-    username: bct_user
-    password: bct_password
+    username: ${DISCOVERY_DB_USER:discovery_user}
+    password: ${DISCOVERY_DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     hibernate:
