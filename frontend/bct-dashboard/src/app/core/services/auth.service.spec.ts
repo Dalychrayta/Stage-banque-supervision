@@ -26,24 +26,25 @@ describe('AuthService', () => {
     sessionStorage.clear();
   });
 
-  it('should store the encoded token and report authenticated on successful login', () => {
+  it('should store the JWT and report authenticated on successful login', () => {
     let result: boolean | undefined;
-    service.login('admin', 'bct2026').subscribe(ok => (result = ok));
+    service.login('admin', 'correct-password').subscribe(ok => (result = ok));
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/discovery/resources/stats`);
-    expect(req.request.headers.get('Authorization')).toBe('Basic ' + btoa('admin:bct2026'));
-    req.flush({});
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ username: 'admin', password: 'correct-password' });
+    req.flush({ token: 'fake.jwt.token', username: 'admin', role: 'ADMIN', expiresIn: 3600 });
 
     expect(result).toBeTrue();
     expect(service.isAuthenticated()).toBeTrue();
-    expect(service.getToken()).toBe(btoa('admin:bct2026'));
+    expect(service.getToken()).toBe('fake.jwt.token');
   });
 
   it('should not store a token and report unauthenticated when login fails', () => {
     let result: boolean | undefined;
     service.login('admin', 'wrong-password').subscribe(ok => (result = ok));
 
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/discovery/resources/stats`);
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`);
     req.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(result).toBeFalse();
@@ -52,8 +53,9 @@ describe('AuthService', () => {
   });
 
   it('should clear the token on logout', () => {
-    service.login('admin', 'bct2026').subscribe();
-    httpMock.expectOne(`${environment.apiBaseUrl}/discovery/resources/stats`).flush({});
+    service.login('admin', 'correct-password').subscribe();
+    httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`)
+        .flush({ token: 'fake.jwt.token', username: 'admin', role: 'ADMIN', expiresIn: 3600 });
     expect(service.isAuthenticated()).toBeTrue();
 
     service.logout();

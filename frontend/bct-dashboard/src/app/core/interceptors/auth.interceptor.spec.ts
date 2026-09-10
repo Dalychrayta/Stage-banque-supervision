@@ -40,7 +40,7 @@ describe('authInterceptor', () => {
     httpClient.get('/api/anything').subscribe();
 
     const req = httpMock.expectOne('/api/anything');
-    expect(req.request.headers.get('Authorization')).toBe('Basic dGVzdDp0ZXN0');
+    expect(req.request.headers.get('Authorization')).toBe('Bearer dGVzdDp0ZXN0');
     req.flush({});
   });
 

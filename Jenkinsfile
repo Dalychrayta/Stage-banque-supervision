@@ -228,9 +228,18 @@ pipeline {
                 // Les paquets GHCR sont privés par défaut, et le stage précédent
                 // s'est déconnecté à la fin — il faut se reconnecter ici pour
                 // que le `pull` soit autorisé.
-                withCredentials([usernamePassword(credentialsId: 'ghcr-credential', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
+                // bct-env-file : credential Jenkins de type "Secret file" contenant
+                // les mêmes lignes ADMIN_USERNAME/ADMIN_PASSWORD/JWT_SECRET/
+                // GRAFANA_ADMIN_PASSWORD que infra/.env en local — sans lui,
+                // api-gateway refuse de démarrer (plus de valeurs par défaut
+                // dans le code depuis le passage au JWT).
+                withCredentials([
+                    usernamePassword(credentialsId: 'ghcr-credential', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN'),
+                    file(credentialsId: 'bct-env-file', variable: 'BCT_ENV_FILE')
+                ]) {
                     dir('bct-images/infra') {
                         sh '''
+                            cp "$BCT_ENV_FILE" .env
                             echo "$GHCR_TOKEN" | docker login ${REGISTRY} -u "$GHCR_USER" --password-stdin
                             SERVICES="eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend"
                             docker compose pull $SERVICES

@@ -98,13 +98,21 @@ docker run -d --name platformeback-mysql -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSW
 cd /chemin/vers/PlatformeBack && mvn spring-boot:run   # écoute sur le port 8085
 ```
 
-### Identifiants
+### Identifiants et secrets
 
-L'API Gateway exige une authentification HTTP Basic. Identifiants par défaut (modifiables via les variables d'environnement `ADMIN_USERNAME` / `ADMIN_PASSWORD`) :
+L'API Gateway exige une authentification par jeton JWT (`POST /api/auth/login` avec `{username, password}`, renvoie un jeton à joindre en `Authorization: Bearer <token>` sur toutes les autres requêtes — voir [AuthController](services/api-gateway/src/main/java/com/bct/gateway/controller/AuthController.java) / [SecurityConfig](services/api-gateway/src/main/java/com/bct/gateway/config/SecurityConfig.java)).
 
-| Utilisateur | Mot de passe |
-|-------------|--------------|
-| `admin`     | `bct2026`    |
+**Aucun mot de passe n'a de valeur par défaut dans le code** — `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `JWT_SECRET` et `GRAFANA_ADMIN_PASSWORD` doivent être fournis via l'environnement, sinon les services concernés refusent de démarrer.
+
+1. Copier le modèle : `cp infra/.env.example infra/.env`
+2. Remplacer les valeurs par de vraies valeurs générées localement, par exemple :
+   ```bash
+   openssl rand -base64 48   # pour JWT_SECRET
+   openssl rand -base64 18   # pour un mot de passe
+   ```
+3. `infra/.env` est ignoré par git (voir `.gitignore`) — ces secrets ne sont jamais committés.
+
+Pour un lancement sans Docker (§ ci-dessus), exporter ces mêmes variables dans le terminal avant `mvn spring-boot:run` sur `api-gateway`.
 
 ## Lancement complet en Docker
 

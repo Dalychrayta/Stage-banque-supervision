@@ -9,16 +9,17 @@ import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Vérifie que l'authentification HTTP Basic du Gateway est bien appliquée
- * (cf. SecurityConfig) sans dépendre d'un vrai Eureka Server.
+ * Vérifie que l'authentification JWT du Gateway est bien appliquée (cf.
+ * SecurityConfig / AuthController) sans dépendre d'un vrai Eureka Server.
  *
  * Le ReactiveDiscoveryClient est remplacé par un stub (au lieu d'être
  * désactivé) pour que la chaîne de filtres Gateway/CORS se comporte
@@ -28,7 +29,11 @@ import java.util.List;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "eureka.client.enabled=false",
         "eureka.client.register-with-eureka=false",
-        "eureka.client.fetch-registry=false"
+        "eureka.client.fetch-registry=false",
+        "security.admin.username=admin",
+        "security.admin.password=test-password-123",
+        "security.jwt.secret=test-secret-key-at-least-32-bytes-long-for-hs256",
+        "security.jwt.expiration-ms=3600000"
 })
 @org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 class SecurityConfigIntegrationTest {
@@ -62,46 +67,71 @@ class SecurityConfigIntegrationTest {
     }
 
     @Test
-    void protectedRoute_shouldReject401WithoutCredentials() {
+    void login_shouldRejectWrongPassword() {
+        webTestClient.post().uri("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("username", "admin", "password", "wrong-password"))
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void login_shouldIssueTokenWithValidCredentials() {
+        webTestClient.post().uri("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("username", "admin", "password", "test-password-123"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.token").isNotEmpty()
+                .jsonPath("$.role").isEqualTo("ADMIN");
+    }
+
+    @Test
+    void protectedRoute_shouldReject401WithoutToken() {
         webTestClient.get().uri("/api/discovery/resources")
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
 
     @Test
-    void protectedRoute_shouldRejectInvalidCredentials() {
+    void protectedRoute_shouldReject401WithInvalidToken() {
         webTestClient.get().uri("/api/discovery/resources")
-                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader("admin", "wrong-password"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer not-a-real-token")
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
 
     @Test
-    void protectedRoute_shouldNotReturn401WithValidCredentials() {
+    void protectedRoute_shouldNotReturn401WithValidToken() {
+        String token = login("admin", "test-password-123");
+
         // Pas de discovery-service réel en test : on vérifie seulement que
         // l'authentification passe (la requête peut ensuite échouer plus loin
         // dans le routage, mais plus jamais sur un 401).
         webTestClient.get().uri("/api/discovery/resources")
-                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader("admin", "bct2026"))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .exchange()
-                .expectStatus().value(status -> org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(401));
+                .expectStatus().value(status -> assertThat(status).isNotEqualTo(401));
     }
 
     @Test
-    void actuatorHealth_shouldBeAccessibleWithoutCredentials() {
+    void actuatorHealth_shouldBeAccessibleWithoutToken() {
         webTestClient.get().uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk();
     }
 
-    // Le préflight CORS (OPTIONS) est vérifié manuellement au curl contre
-    // l'instance réelle plutôt qu'ici : sous ce harnais de test
-    // (RANDOM_PORT + ReactiveDiscoveryClient stubbé), l'ordre des filtres
-    // Security/Gateway diffère assez pour fausser le résultat sans que ça
-    // reflète un vrai problème en production.
-
-    private String basicAuthHeader(String username, String password) {
-        String credentials = username + ":" + password;
-        return "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    @SuppressWarnings("unchecked")
+    private String login(String username, String password) {
+        Map<String, Object> body = webTestClient.post().uri("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("username", username, "password", password))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .returnResult()
+                .getResponseBody();
+        return (String) body.get("token");
     }
 }

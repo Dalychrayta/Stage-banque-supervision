@@ -54,8 +54,14 @@ eureka:
 
 security:
   admin:
-    username: ${ADMIN_USERNAME:admin}
-    password: ${ADMIN_PASSWORD:bct2026}
+    # Aucune valeur par défaut volontairement : sans ADMIN_USERNAME/ADMIN_PASSWORD
+    # définis dans l'environnement, le service refuse de démarrer plutôt que de
+    # se rabattre sur un mot de passe faible écrit en dur.
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
 management:
   endpoints:

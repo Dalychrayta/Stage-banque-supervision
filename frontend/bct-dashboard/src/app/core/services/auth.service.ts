@@ -4,8 +4,15 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-const STORAGE_KEY = 'bct_auth';
+const STORAGE_KEY = 'bct_auth_token';
 const API_BASE = environment.apiBaseUrl;
+
+interface LoginResponse {
+  token: string;
+  username: string;
+  role: string;
+  expiresIn: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -16,12 +23,9 @@ export class AuthService {
   }
 
   login(username: string, password: string): Observable<boolean> {
-    const token = btoa(`${username}:${password}`);
-    return this.http.get(`${API_BASE}/discovery/resources/stats`, {
-      headers: { Authorization: `Basic ${token}` }
-    }).pipe(
-      map(() => {
-        this.setToken(token);
+    return this.http.post<LoginResponse>(`${API_BASE}/auth/login`, { username, password }).pipe(
+      map(response => {
+        this.setToken(response.token);
         return true;
       }),
       catchError(() => of(false))
