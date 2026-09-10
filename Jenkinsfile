@@ -241,6 +241,8 @@ pipeline {
                         sh '''
                             cp "$BCT_ENV_FILE" .env
                             echo "$GHCR_TOKEN" | docker login ${REGISTRY} -u "$GHCR_USER" --password-stdin
+                            # Keycloak (image publique) doit tourner avant api-gateway (depends_on).
+                            docker compose up -d keycloak
                             SERVICES="eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend"
                             docker compose pull $SERVICES
                             docker compose up -d $SERVICES

@@ -98,21 +98,33 @@ docker run -d --name platformeback-mysql -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSW
 cd /chemin/vers/PlatformeBack && mvn spring-boot:run   # écoute sur le port 8085
 ```
 
-### Identifiants et secrets
+### Authentification et rôles (Keycloak)
 
-L'API Gateway exige une authentification par jeton JWT (`POST /api/auth/login` avec `{username, password}`, renvoie un jeton à joindre en `Authorization: Bearer <token>` sur toutes les autres requêtes — voir [AuthController](services/api-gateway/src/main/java/com/bct/gateway/controller/AuthController.java) / [SecurityConfig](services/api-gateway/src/main/java/com/bct/gateway/config/SecurityConfig.java)).
+L'identité est gérée par **Keycloak** (conteneur `bct-keycloak`, realm `bct`, console d'admin sur http://localhost:8180). L'API Gateway est un *resource server* OAuth2 : il ne fabrique aucun jeton, il vérifie ceux émis par Keycloak et lit les rôles depuis `realm_access.roles` (voir [SecurityConfig](services/api-gateway/src/main/java/com/bct/gateway/config/SecurityConfig.java)). Le frontend redirige vers l'écran de connexion Keycloak (flux OIDC *code* + PKCE).
 
-**Aucun mot de passe n'a de valeur par défaut dans le code** — `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `JWT_SECRET` et `GRAFANA_ADMIN_PASSWORD` doivent être fournis via l'environnement, sinon les services concernés refusent de démarrer.
+**Trois rôles :**
+
+| Rôle | Peut |
+|---|---|
+| `VIEWER` | consulter le tableau de bord et l'historique — aucune action |
+| `OPERATOR` | + déclencher une réparation, résoudre un incident, corriger un diagnostic |
+| `ADMIN` | + gérer les comptes et la configuration (dans la console Keycloak) |
+
+**Comptes de démo** (mots de passe de développement, dans `infra/keycloak/realm-bct.json` — à changer pour tout usage réel) :
+
+| Utilisateur | Mot de passe | Rôle |
+|---|---|---|
+| `viewer.bct` | `Viewer#2026` | VIEWER |
+| `operator.bct` | `Operator#2026` | OPERATOR |
+| `admin.bct` | `Admin#2026` | ADMIN |
+
+### Secrets
+
+**Aucun mot de passe n'a de valeur par défaut dans le code.** `KEYCLOAK_ADMIN_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`, `ORACLE_SYS_PASSWORD` et les mots de passe de base par service doivent être fournis via l'environnement.
 
 1. Copier le modèle : `cp infra/.env.example infra/.env`
-2. Remplacer les valeurs par de vraies valeurs générées localement, par exemple :
-   ```bash
-   openssl rand -base64 48   # pour JWT_SECRET
-   openssl rand -base64 18   # pour un mot de passe
-   ```
-3. `infra/.env` est ignoré par git (voir `.gitignore`) — ces secrets ne sont jamais committés.
-
-Pour un lancement sans Docker (§ ci-dessus), exporter ces mêmes variables dans le terminal avant `mvn spring-boot:run` sur `api-gateway`.
+2. Remplacer les valeurs par de vraies valeurs (`openssl rand -base64 18`)
+3. `infra/.env` est ignoré par git — ces secrets ne sont jamais committés
 
 ## Lancement complet en Docker
 

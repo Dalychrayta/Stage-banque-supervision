@@ -45,23 +45,21 @@ spring:
           predicates:
             - Path=/api/healing/**
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak (realm bct). L'URL doit être joignable par ce service ET
+          # identique à l'émetteur (iss) des jetons — d'où host.docker.internal
+          # aussi bien pour le navigateur que pour les conteneurs.
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/bct}
+
 eureka:
   client:
     service-url:
       defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
   instance:
     prefer-ip-address: true
-
-security:
-  admin:
-    # Aucune valeur par défaut volontairement : sans ADMIN_USERNAME/ADMIN_PASSWORD
-    # définis dans l'environnement, le service refuse de démarrer plutôt que de
-    # se rabattre sur un mot de passe faible écrit en dur.
-    username: ${ADMIN_USERNAME}
-    password: ${ADMIN_PASSWORD}
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
 management:
   endpoints:

@@ -1,66 +1,61 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { OAuthService } from 'angular-oauth2-oidc';
 import { AuthService } from './auth.service';
-import { environment } from '../../../environments/environment';
+
+function fakeJwtWithRoles(roles: string[]): string {
+  const header = btoa(JSON.stringify({ alg: 'none' }));
+  const payload = btoa(JSON.stringify({ realm_access: { roles } }));
+  return `${header}.${payload}.sig`;
+}
 
 describe('AuthService', () => {
   let service: AuthService;
-  let httpMock: HttpTestingController;
+  let oauth: jasmine.SpyObj<OAuthService>;
 
   beforeEach(() => {
-    sessionStorage.clear();
+    oauth = jasmine.createSpyObj('OAuthService', [
+      'configure', 'setupAutomaticSilentRefresh', 'loadDiscoveryDocumentAndTryLogin',
+      'initLoginFlow', 'logOut', 'hasValidAccessToken', 'getAccessToken', 'getIdentityClaims'
+    ]);
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
       providers: [
         AuthService,
+        { provide: OAuthService, useValue: oauth },
         { provide: PLATFORM_ID, useValue: 'browser' }
       ]
     });
     service = TestBed.inject(AuthService);
-    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => {
-    httpMock.verify();
-    sessionStorage.clear();
-  });
-
-  it('should store the JWT and report authenticated on successful login', () => {
-    let result: boolean | undefined;
-    service.login('admin', 'correct-password').subscribe(ok => (result = ok));
-
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ username: 'admin', password: 'correct-password' });
-    req.flush({ token: 'fake.jwt.token', username: 'admin', role: 'ADMIN', expiresIn: 3600 });
-
-    expect(result).toBeTrue();
+  it('reports authenticated based on the OAuth token', () => {
+    oauth.hasValidAccessToken.and.returnValue(true);
     expect(service.isAuthenticated()).toBeTrue();
-    expect(service.getToken()).toBe('fake.jwt.token');
+    oauth.hasValidAccessToken.and.returnValue(false);
+    expect(service.isAuthenticated()).toBeFalse();
   });
 
-  it('should not store a token and report unauthenticated when login fails', () => {
-    let result: boolean | undefined;
-    service.login('admin', 'wrong-password').subscribe(ok => (result = ok));
-
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`);
-    req.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
-
-    expect(result).toBeFalse();
-    expect(service.isAuthenticated()).toBeFalse();
-    expect(service.getToken()).toBeNull();
+  it('extracts realm roles from the access token', () => {
+    oauth.getAccessToken.and.returnValue(fakeJwtWithRoles(['OPERATOR', 'offline_access']));
+    expect(service.getRoles()).toEqual(['OPERATOR']);
+    expect(service.hasRole('OPERATOR')).toBeTrue();
+    expect(service.hasRole('ADMIN')).toBeFalse();
   });
 
-  it('should clear the token on logout', () => {
-    service.login('admin', 'correct-password').subscribe();
-    httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`)
-        .flush({ token: 'fake.jwt.token', username: 'admin', role: 'ADMIN', expiresIn: 3600 });
-    expect(service.isAuthenticated()).toBeTrue();
+  it('canOperate is true for OPERATOR or ADMIN, false for VIEWER', () => {
+    oauth.getAccessToken.and.returnValue(fakeJwtWithRoles(['VIEWER']));
+    expect(service.canOperate()).toBeFalse();
+    oauth.getAccessToken.and.returnValue(fakeJwtWithRoles(['ADMIN']));
+    expect(service.canOperate()).toBeTrue();
+  });
 
-    service.logout();
+  it('login() delegates to the Keycloak redirect flow', () => {
+    service.login();
+    expect(oauth.initLoginFlow).toHaveBeenCalled();
+  });
 
-    expect(service.isAuthenticated()).toBeFalse();
-    expect(service.getToken()).toBeNull();
+  it('returns the preferred_username from identity claims', () => {
+    oauth.getIdentityClaims.and.returnValue({ preferred_username: 'operator.bct' });
+    expect(service.getUsername()).toBe('operator.bct');
   });
 });

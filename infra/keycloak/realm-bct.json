@@ -1,0 +1,69 @@
+{
+  "realm": "bct",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "accessTokenLifespan": 1800,
+  "roles": {
+    "realm": [
+      { "name": "VIEWER", "description": "Lecture seule : tableau de bord, historique. Aucune action." },
+      { "name": "OPERATOR", "description": "VIEWER + déclencher une réparation, résoudre un incident, corriger un diagnostic." },
+      { "name": "ADMIN", "description": "OPERATOR + gestion des comptes et de la configuration (via la console Keycloak)." }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "bct-frontend",
+      "name": "BCT Supervision - frontend Angular",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "rootUrl": "http://localhost:4200",
+      "baseUrl": "http://localhost:4200",
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200", "+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "viewer.bct",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "viewer.bct@example.local",
+      "firstName": "Vue",
+      "lastName": "Lecture",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "Viewer#2026", "temporary": false }],
+      "realmRoles": ["VIEWER"]
+    },
+    {
+      "username": "operator.bct",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "operator.bct@example.local",
+      "firstName": "Op",
+      "lastName": "Exploitation",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "Operator#2026", "temporary": false }],
+      "realmRoles": ["OPERATOR"]
+    },
+    {
+      "username": "admin.bct",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin.bct@example.local",
+      "firstName": "Admin",
+      "lastName": "Plateforme",
+      "requiredActions": [],
+      "credentials": [{ "type": "password", "value": "Admin#2026", "temporary": false }],
+      "realmRoles": ["ADMIN"]
+    }
+  ]
+}

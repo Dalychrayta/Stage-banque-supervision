@@ -60,7 +60,7 @@ import { interval, Subscription } from 'rxjs';
               <div class="cause-cell">
                 <ng-container *ngIf="editingCategoryId !== i.id; else editCat">
                   <span class="category-tag" [class.corrected]="i.correctedCategory">{{ i.effectiveCategory || i.causeCategory }}</span>
-                  <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm cat-edit"
+                  <button *ngIf="canOperate" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm cat-edit"
                           title="Corriger la cause" (click)="startEditCategory(i)"></button>
                   <small *ngIf="i.correctedBy" class="corrected-by" title="Corrigé manuellement">corrigé par {{ i.correctedBy }}</small>
                 </ng-container>
@@ -78,7 +78,8 @@ import { interval, Subscription } from 'rxjs';
             <td>{{ i.analyzedAt | date:'dd/MM HH:mm' }}</td>
             <td>
               <button pButton label="Résoudre" icon="pi pi-check" severity="success" size="small"
-                      *ngIf="i.status === 'OPEN'" (click)="resolve(i)"></button>
+                      *ngIf="i.status === 'OPEN' && canOperate" (click)="resolve(i)"></button>
+              <span *ngIf="i.status === 'OPEN' && !canOperate" class="ro-hint" title="Réservé aux opérateurs">lecture seule</span>
             </td>
           </tr>
         </ng-template>
@@ -114,6 +115,7 @@ import { interval, Subscription } from 'rxjs';
     .category-tag.corrected { background: #ebf8ff; color: #2b6cb0; }
     .cause-cell { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
     .cat-edit { padding: 0 .25rem !important; }
+    .ro-hint { color: #a0aec0; font-size: .72rem; font-style: italic; }
     .corrected-by { color: #3182ce; font-size: .68rem; }
     .cat-select { font-size: .75rem; padding: .15rem .3rem; border: 1px solid #cbd5e0; border-radius: 4px; font-family: monospace; }
     .stat-dot { font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: 8px; }
@@ -138,6 +140,7 @@ export class AnomaliesComponent implements OnInit, OnDestroy {
   readonly categories = CAUSE_CATEGORIES;
   editingCategoryId: number | null = null;
   editCategoryValue = '';
+  canOperate = false;
   private currentPage = 0;
   private sub = new Subscription();
 
@@ -145,7 +148,9 @@ export class AnomaliesComponent implements OnInit, OnDestroy {
     private api: ApiService,
     private auth: AuthService,
     private msg: MessageService,
-    @Inject(PLATFORM_ID) private platformId: Object) {}
+    @Inject(PLATFORM_ID) private platformId: Object) {
+    this.canOperate = this.auth.canOperate();
+  }
 
   ngOnInit(): void {
     this.api.getRcaStats().subscribe({ next: s => this.stats = s });

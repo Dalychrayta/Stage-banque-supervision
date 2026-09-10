@@ -95,19 +95,44 @@ services:
     ports:
       - "8761:8761"
 
+  # Gestion d'identité : comptes, rôles (VIEWER/OPERATOR/ADMIN), connexion,
+  # émission des jetons. Mode "dev" = base H2 intégrée (persistée dans le
+  # volume keycloak-data). Le realm "bct" est importé au démarrage.
+  # Accessible sur la même URL depuis le navigateur ET les conteneurs
+  # (host.docker.internal) pour que l'émetteur du jeton (iss) soit cohérent.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: bct-keycloak
+    command: start-dev --import-realm --http-port=8180
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://host.docker.internal:8180
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/realm-bct.json:/opt/keycloak/data/import/realm-bct.json:ro
+      - keycloak-data:/opt/keycloak/data
+    ports:
+      - "8180:8180"
+    mem_limit: 768m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   api-gateway:
     build: ../services/api-gateway
     image: ghcr.io/dalychrayta/bct-api-gateway:latest
     container_name: bct-api-gateway
     depends_on:
       - eureka-server
+      - keycloak
     environment:
       EUREKA_HOST: eureka-server
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      KEYCLOAK_ISSUER_URI: http://host.docker.internal:8180/realms/bct
       JAVA_TOOL_OPTIONS: "-Xmx250m"
     mem_limit: 400m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"
 
@@ -222,3 +247,4 @@ services:
 volumes:
   oracle-data:
   grafana-data:
+  keycloak-data:

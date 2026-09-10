@@ -9,31 +9,29 @@ import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Vérifie que l'authentification JWT du Gateway est bien appliquée (cf.
- * SecurityConfig / AuthController) sans dépendre d'un vrai Eureka Server.
- *
- * Le ReactiveDiscoveryClient est remplacé par un stub (au lieu d'être
- * désactivé) pour que la chaîne de filtres Gateway/CORS se comporte
- * exactement comme en production — la désactiver casse la résolution
- * des routes lb:// et fausse le comportement CORS observé dans ce test.
+ * Vérifie que l'API Gateway applique bien les règles d'accès par rôle
+ * (cf. SecurityConfig) sans dépendre d'un vrai Keycloak : le
+ * ReactiveJwtDecoder est remplacé par un stub qui fabrique des jetons
+ * synthétiques portant le rôle demandé dans realm_access.roles.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "eureka.client.enabled=false",
         "eureka.client.register-with-eureka=false",
         "eureka.client.fetch-registry=false",
-        "security.admin.username=admin",
-        "security.admin.password=test-password-123",
-        "security.jwt.secret=test-secret-key-at-least-32-bytes-long-for-hs256",
-        "security.jwt.expiration-ms=3600000"
+        "spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8180/realms/bct"
 })
 @org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 class SecurityConfigIntegrationTest {
@@ -42,96 +40,82 @@ class SecurityConfigIntegrationTest {
     private WebTestClient webTestClient;
 
     @TestConfiguration
-    static class StubDiscoveryClientConfig {
+    static class StubConfig {
         @Bean
         ReactiveDiscoveryClient reactiveDiscoveryClient() {
             ServiceInstance instance = new DefaultServiceInstance(
-                    "discovery-service-1", "discovery-service", "localhost", 8081, false);
+                    "rca-service-1", "rca-service", "localhost", 8083, false);
             return new ReactiveDiscoveryClient() {
-                @Override
-                public String description() {
-                    return "stub";
+                @Override public String description() { return "stub"; }
+                @Override public Flux<ServiceInstance> getInstances(String serviceId) {
+                    return "rca-service".equals(serviceId) ? Flux.just(instance) : Flux.empty();
                 }
+                @Override public Flux<String> getServices() { return Flux.just("rca-service"); }
+            };
+        }
 
-                @Override
-                public Flux<ServiceInstance> getInstances(String serviceId) {
-                    return "discovery-service".equals(serviceId) ? Flux.just(instance) : Flux.empty();
+        /** Décodeur bidon : le "token" est juste le nom du rôle voulu. */
+        @Bean
+        ReactiveJwtDecoder reactiveJwtDecoder() {
+            return token -> {
+                if (!List.of("VIEWER", "OPERATOR", "ADMIN").contains(token)) {
+                    return Mono.error(new org.springframework.security.oauth2.jwt.BadJwtException("token invalide"));
                 }
-
-                @Override
-                public Flux<String> getServices() {
-                    return Flux.just("discovery-service");
-                }
+                Jwt jwt = Jwt.withTokenValue(token)
+                        .header("alg", "none")
+                        .subject("user-" + token)
+                        .claim("preferred_username", token.toLowerCase() + ".bct")
+                        .claim("realm_access", Map.of("roles", List.of(token)))
+                        .issuedAt(Instant.now())
+                        .expiresAt(Instant.now().plusSeconds(300))
+                        .build();
+                return Mono.just(jwt);
             };
         }
     }
 
     @Test
-    void login_shouldRejectWrongPassword() {
-        webTestClient.post().uri("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(Map.of("username", "admin", "password", "wrong-password"))
+    void noToken_shouldReturn401() {
+        webTestClient.get().uri("/api/rca")
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
 
     @Test
-    void login_shouldIssueTokenWithValidCredentials() {
-        webTestClient.post().uri("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(Map.of("username", "admin", "password", "test-password-123"))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.token").isNotEmpty()
-                .jsonPath("$.role").isEqualTo("ADMIN");
-    }
-
-    @Test
-    void protectedRoute_shouldReject401WithoutToken() {
-        webTestClient.get().uri("/api/discovery/resources")
+    void invalidToken_shouldReturn401() {
+        webTestClient.get().uri("/api/rca")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer not-a-role")
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
 
     @Test
-    void protectedRoute_shouldReject401WithInvalidToken() {
-        webTestClient.get().uri("/api/discovery/resources")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer not-a-real-token")
+    void viewer_canRead_butCannotMutate() {
+        // lecture : autorisée (peut échouer plus loin dans le routage, mais jamais 401/403)
+        webTestClient.get().uri("/api/rca")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer VIEWER")
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().value(s -> assertThat(s).isNotIn(401, 403));
+
+        // action : interdite pour un VIEWER
+        webTestClient.patch().uri("/api/rca/1/resolve")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer VIEWER")
+                .exchange()
+                .expectStatus().isForbidden();
     }
 
     @Test
-    void protectedRoute_shouldNotReturn401WithValidToken() {
-        String token = login("admin", "test-password-123");
-
-        // Pas de discovery-service réel en test : on vérifie seulement que
-        // l'authentification passe (la requête peut ensuite échouer plus loin
-        // dans le routage, mais plus jamais sur un 401).
-        webTestClient.get().uri("/api/discovery/resources")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+    void operator_canMutate() {
+        webTestClient.patch().uri("/api/rca/1/resolve")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer OPERATOR")
                 .exchange()
-                .expectStatus().value(status -> assertThat(status).isNotEqualTo(401));
+                .expectStatus().value(s -> assertThat(s).isNotIn(401, 403));
     }
 
     @Test
-    void actuatorHealth_shouldBeAccessibleWithoutToken() {
+    void actuatorHealth_shouldBeOpen() {
         webTestClient.get().uri("/actuator/health")
                 .exchange()
                 .expectStatus().isOk();
-    }
-
-    @SuppressWarnings("unchecked")
-    private String login(String username, String password) {
-        Map<String, Object> body = webTestClient.post().uri("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(Map.of("username", username, "password", password))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Map.class)
-                .returnResult()
-                .getResponseBody();
-        return (String) body.get("token");
     }
 }

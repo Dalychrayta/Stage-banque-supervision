@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { HealingAction, HealingStats } from '../../core/models/incident.model';
 import { Resource } from '../../core/models/resource.model';
 
@@ -26,7 +27,7 @@ import { Resource } from '../../core/models/resource.model';
         <div class="hstat failed"><i class="pi pi-times-circle"></i><div><span>{{ stats.failed }}</span><small>Échecs</small></div></div>
         <div class="hstat pending"><i class="pi pi-clock"></i><div><span>{{ stats.pending }}</span><small>En attente</small></div></div>
         <div class="hstat total"><i class="pi pi-list"></i><div><span>{{ stats.total }}</span><small>Total</small></div></div>
-        <button pButton label="Action manuelle" icon="pi pi-play" class="p-button-outlined manual-btn" (click)="showManualDialog = true"></button>
+        <button *ngIf="canOperate" pButton label="Action manuelle" icon="pi pi-play" class="p-button-outlined manual-btn" (click)="showManualDialog = true"></button>
       </div>
 
       <p-table [value]="actions" [rows]="pageSize" [paginator]="true" [lazy]="true" [totalRecords]="totalRecords"
@@ -95,7 +96,11 @@ export class HealingComponent implements OnInit {
   manualActionType = '';
   actionTypeOptions = [{label:'Redémarrer le service',value:'RESTART_SERVICE'},{label:'Vider le cache',value:'CLEAR_CACHE'},{label:'Libérer espace disque',value:'FREE_DISK_SPACE'},{label:'Terminer processus CPU',value:'KILL_PROCESS'},{label:"Notifier l'équipe",value:'NOTIFY_TEAM'}];
 
-  constructor(private api: ApiService, private msg: MessageService) {}
+  canOperate = false;
+
+  constructor(private api: ApiService, private msg: MessageService, private auth: AuthService) {
+    this.canOperate = this.auth.canOperate();
+  }
 
   ngOnInit(): void {
     this.api.getHealingStats().subscribe({ next: s => this.stats = s });

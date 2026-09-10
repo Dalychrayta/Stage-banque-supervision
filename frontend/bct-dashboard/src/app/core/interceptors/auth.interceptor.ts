@@ -1,12 +1,10 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
-  const router = inject(Router);
   const token = auth.getToken();
 
   const authReq = token
@@ -16,8 +14,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError(err => {
       if (err.status === 401) {
-        auth.logout();
-        router.navigate(['/login']);
+        auth.login(); // jeton expiré ou absent -> on renvoie vers Keycloak
       }
       return throwError(() => err);
     })
