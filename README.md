@@ -85,6 +85,19 @@ ng serve
 
 Puis ouvrir **http://localhost:4200**.
 
+**5. Cible réelle — optionnel (`srv-002` / `auth-server-01`)**
+
+Une des 5 ressources surveillées (`srv-002`) n'est pas simulée : c'est un ancien projet perso (`PlatformeBack`, hors de ce repo) relancé comme vraie cible de test, monitoré via son endpoint Actuator réel et réellement redémarré par l'auto-healing en cas d'incident. Sans cette cible, tout continue de fonctionner normalement — les 4 autres ressources restent simulées comme d'habitude, et `srv-002` apparaît juste `DOWN` sur le tableau de bord.
+
+Pour l'activer, deux prérequis, **en dehors** de `infra/docker-compose.yml` (dépendance propre à cet ancien projet, pas au reste de la plateforme) :
+```bash
+# Sa base de données (démarrée une seule fois, puis conteneur réutilisé)
+docker run -d --name platformeback-mysql -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -e MYSQL_DATABASE=platforme mysql:8.0
+# ou, si déjà créé : docker start platformeback-mysql
+
+cd /chemin/vers/PlatformeBack && mvn spring-boot:run   # écoute sur le port 8085
+```
+
 ### Identifiants
 
 L'API Gateway exige une authentification HTTP Basic. Identifiants par défaut (modifiables via les variables d'environnement `ADMIN_USERNAME` / `ADMIN_PASSWORD`) :
