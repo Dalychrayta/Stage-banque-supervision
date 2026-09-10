@@ -62,8 +62,9 @@ public class Resource {
     @Column(name = "TAGS", length = 500)
     private String tags; // JSON string: ["web","payment"]
 
-    // true = données générées (SimulatorScheduler) ; false = ressource réelle
-    // surveillée pour de vrai (ex. srv-002 / PlatformeBack).
+    // Conservé pour compatibilité même si la simulation a été retirée du
+    // projet (toutes les ressources actuelles sont réelles) : reste utile
+    // si une future ressource est réintégrée à des fins de démonstration.
     @Column(name = "SIMULATED")
     private Boolean simulated;
 

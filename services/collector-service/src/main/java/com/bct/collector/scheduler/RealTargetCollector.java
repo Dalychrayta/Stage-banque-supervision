@@ -6,6 +6,8 @@ import com.bct.collector.service.CollectorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,8 +19,11 @@ import java.util.Map;
 /**
  * Collecte de VRAIES métriques depuis une instance réelle (PlatformeBack,
  * un ancien projet perso relancé pour servir de cible de test), via son
- * endpoint actuator — au lieu d'inventer des chiffres comme le fait
- * SimulatorScheduler pour les 4 autres ressources.
+ * endpoint actuator. C'est la SEULE ressource surveillée par la plateforme
+ * — la simulation (4 ressources fabriquées) a été retirée : elle faussait
+ * l'entraînement du modèle IA en mélangeant un comportement inventé avec
+ * un vrai comportement, et n'avait plus d'utilité une fois la chaîne
+ * complète validée sur une vraie cible.
  */
 @Component
 @RequiredArgsConstructor
@@ -36,6 +41,12 @@ public class RealTargetCollector {
 
     private WebClient client() {
         return WebClient.create(actuatorBaseUrl);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void registerRealTarget() {
+        discoveryClient.register(RESOURCE_ID, RESOURCE_NAME, "SERVER", false);
+        log.info("Ressource réelle enregistrée auprès du Discovery Service : {}", RESOURCE_ID);
     }
 
     @Scheduled(fixedDelayString = "${collector.metrics.interval-ms:30000}")
