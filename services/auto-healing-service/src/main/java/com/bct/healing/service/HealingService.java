@@ -118,11 +118,20 @@ public class HealingService {
 
     private RealActionExecutor.ActionResult executeAction(HealingAction action, HealingRule rule) {
         // Cible réelle (srv-002 / PlatformeBack) : on exécute vraiment
-        // l'action au lieu de la simuler, pour RESTART_SERVICE et KILL_PROCESS
-        // (les deux reviennent à arrêter puis relancer le seul processus réel).
-        if (realActionExecutor.isRealTarget(action.getResourceId())
-                && (rule.actionType() == ActionType.RESTART_SERVICE || rule.actionType() == ActionType.KILL_PROCESS)) {
-            return realActionExecutor.restartRealService();
+        // l'action au lieu de la simuler.
+        if (realActionExecutor.isRealTarget(action.getResourceId())) {
+            switch (rule.actionType()) {
+                // RESTART et KILL reviennent au même ici : la cible est un
+                // unique processus Java, on l'arrête et on le relance.
+                case RESTART_SERVICE, KILL_PROCESS -> {
+                    return realActionExecutor.restartRealService();
+                }
+                // Supprime réellement les logs archivés trop anciens.
+                case FREE_DISK_SPACE -> {
+                    return realActionExecutor.freeRealDiskSpace();
+                }
+                default -> { /* les autres actions restent simulées ci-dessous */ }
+            }
         }
 
         // Dans l'environnement de démonstration, on simule l'exécution

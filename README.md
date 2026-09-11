@@ -89,14 +89,21 @@ Puis ouvrir **http://localhost:4200**.
 
 Une des 5 ressources surveillées (`srv-002`) n'est pas simulée : c'est un ancien projet perso (`PlatformeBack`, hors de ce repo) relancé comme vraie cible de test, monitoré via son endpoint Actuator réel et réellement redémarré par l'auto-healing en cas d'incident. Sans cette cible, tout continue de fonctionner normalement — les 4 autres ressources restent simulées comme d'habitude, et `srv-002` apparaît juste `DOWN` sur le tableau de bord.
 
-Pour l'activer, deux prérequis, **en dehors** de `infra/docker-compose.yml` (dépendance propre à cet ancien projet, pas au reste de la plateforme) :
-```bash
-# Sa base de données (démarrée une seule fois, puis conteneur réutilisé)
-docker run -d --name platformeback-mysql -p 3306:3306 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes -e MYSQL_DATABASE=platforme mysql:8.0
-# ou, si déjà créé : docker start platformeback-mysql
+La cible est **conteneurisée** (services `platformeback` et `platformeback-mysql`). Ce n'est pas un détail de confort : `auto-healing-service` tourne lui-même dans un conteneur, et un conteneur est isolé de la machine hôte par conception — il ne pourrait ni voir ni redémarrer un processus lancé à la main sur Windows. En mettant la cible dans le même monde, les deux actions réelles deviennent possibles :
 
-cd /chemin/vers/PlatformeBack && mvn spring-boot:run   # écoute sur le port 8085
+| Action | Mécanisme réel |
+|---|---|
+| `RESTART_SERVICE` / `KILL_PROCESS` | `docker restart bct-platformeback`, via le socket Docker monté dans `auto-healing-service` |
+| `FREE_DISK_SPACE` | suppression des logs archivés de plus de 7 jours dans le volume `platformeback-logs`, partagé avec la cible |
+
+La portée est volontairement étroite : le code ne sait nommer **qu'un** conteneur et **qu'un** dossier (`REAL_TARGET_CONTAINER`, `REAL_TARGET_LOG_DIR`). Le fichier de log actif et tout fichier étranger sont systématiquement épargnés.
+
+Seul prérequis : indiquer où se trouve le projet sur la machine, dans `infra/.env` :
+```bash
+PLATFORMEBACK_PATH=C:/chemin/vers/PlatformeBack
+PLATFORMEBACK_DB_PASSWORD=<généré localement>
 ```
+Puis, comme les autres services : `docker compose up -d platformeback` (la cible écoute sur le port 8085).
 
 ### Authentification et rôles (Keycloak)
 

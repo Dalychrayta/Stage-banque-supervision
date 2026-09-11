@@ -243,6 +243,9 @@ pipeline {
                             echo "$GHCR_TOKEN" | docker login ${REGISTRY} -u "$GHCR_USER" --password-stdin
                             # Keycloak (image publique) doit tourner avant api-gateway (depends_on).
                             docker compose up -d keycloak
+                            # La cible réelle (platformeback) n'est PAS déployée ici : son
+                            # contexte de build est un dossier de la machine de dev, absent
+                            # du conteneur Jenkins. Elle se lance à la main (voir README).
                             SERVICES="eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend"
                             docker compose pull $SERVICES
                             docker compose up -d $SERVICES

@@ -59,3 +59,12 @@ kafka:
 rca:
   service:
     url: ${RCA_SERVICE_URL:http://localhost:8083}
+
+# Cible réelle (srv-002 = PlatformeBack). Ces trois valeurs délimitent
+# TOUT ce que l'auto-remédiation a le droit de toucher : un seul conteneur
+# à redémarrer, un seul dossier où supprimer des logs, et l'âge minimum
+# d'une archive supprimable.
+real-target:
+  container: ${REAL_TARGET_CONTAINER:bct-platformeback}
+  log-dir: ${REAL_TARGET_LOG_DIR:/target-logs}
+  log-retention-days: ${REAL_TARGET_LOG_RETENTION_DAYS:7}
