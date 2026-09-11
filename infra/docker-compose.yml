@@ -98,8 +98,9 @@ services:
   # Gestion d'identité : comptes, rôles (VIEWER/OPERATOR/ADMIN), connexion,
   # émission des jetons. Mode "dev" = base H2 intégrée (persistée dans le
   # volume keycloak-data). Le realm "bct" est importé au démarrage.
-  # Accessible sur la même URL depuis le navigateur ET les conteneurs
-  # (host.docker.internal) pour que l'émetteur du jeton (iss) soit cohérent.
+  #
+  # KC_HOSTNAME = l'adresse vue par le NAVIGATEUR (hors Docker), c'est elle
+  # qui devient l'émetteur (iss) des jetons.
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: bct-keycloak
@@ -107,7 +108,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_HOSTNAME: http://host.docker.internal:8180
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
     volumes:
@@ -116,8 +117,6 @@ services:
     ports:
       - "8180:8180"
     mem_limit: 768m
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   api-gateway:
     build: ../services/api-gateway
@@ -128,11 +127,16 @@ services:
       - keycloak
     environment:
       EUREKA_HOST: eureka-server
-      KEYCLOAK_ISSUER_URI: http://host.docker.internal:8180/realms/bct
+      # Le navigateur est hors Docker, ce service est dedans : ils ne voient
+      # pas Keycloak à la même adresse. On sépare donc les deux usages —
+      #   ISSUER : l'émetteur annoncé dans le jeton, qu'on vérifie (adresse navigateur)
+      #   JWKS   : où récupérer les clés de signature (réseau interne Docker)
+      # En production, Keycloak a un seul nom public joignable par tous :
+      # les deux variables pointent alors vers la même URL.
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}/realms/bct
+      KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/bct/protocol/openid-connect/certs
       JAVA_TOOL_OPTIONS: "-Xmx250m"
     mem_limit: 400m
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"
 

@@ -49,10 +49,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Keycloak (realm bct). L'URL doit être joignable par ce service ET
-          # identique à l'émetteur (iss) des jetons — d'où host.docker.internal
-          # aussi bien pour le navigateur que pour les conteneurs.
+          # Emetteur attendu dans le jeton : l'adresse par laquelle le
+          # NAVIGATEUR a obtenu ce jeton auprès de Keycloak.
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/bct}
+          # Où aller chercher les clés publiques de signature : une adresse
+          # joignable depuis CE service (réseau interne Docker). Renseigner
+          # les deux évite que ce service ait besoin d'atteindre l'URL de
+          # l'émetteur — en production, les deux sont identiques.
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/bct/protocol/openid-connect/certs}
 
 eureka:
   client:
