@@ -106,7 +106,11 @@ services:
   # KC_HOSTNAME = l'adresse vue par le NAVIGATEUR (hors Docker), c'est elle
   # qui devient l'émetteur (iss) des jetons.
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
+    # Image construite sur place pour y intégrer le realm (voir keycloak/Dockerfile) :
+    # le monter depuis le disque échouait dès que le déploiement était piloté
+    # depuis le conteneur Jenkins, dont les chemins n'existent pas sur l'hôte.
+    build: ./keycloak
+    image: bct/keycloak:latest
     container_name: bct-keycloak
     command: start-dev --import-realm --http-port=8180
     environment:
@@ -116,7 +120,6 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
     volumes:
-      - ./keycloak/realm-bct.json:/opt/keycloak/data/import/realm-bct.json:ro
       - keycloak-data:/opt/keycloak/data
     ports:
       - "8180:8180"
