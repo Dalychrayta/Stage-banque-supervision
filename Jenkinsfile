@@ -147,17 +147,31 @@ pipeline {
         // Scan de vulnérabilités (Trivy) sur chaque image fraîchement construite,
         // AVANT de la pousser sur le registre.
         //
-        // IMPORTANT (constat honnête, pas caché) : un premier scan manuel a
-        // révélé de vraies CVE CRITICAL dans les dépendances actuelles
-        // (Tomcat embarqué par Spring Boot 3.4.4, BouncyCastle) — un vrai
-        // résultat de sécurité, mais qui toucherait alors systématiquement
-        // tous les services Java tant que les dépendances ne sont pas mises
-        // à jour (tâche séparée, pas encore faite). Rendre ce gate bloquant
-        // dès maintenant casserait tout le pipeline qui vient de fonctionner
-        // pour la première fois. Le scan reste donc PUREMENT INFORMATIF
-        // (--exit-code 0) le temps que ces dépendances soient traitées ;
-        // passer en bloquant (CRITICAL => échec) est le prochain pas logique
-        // une fois la mise à jour faite.
+        // Ce gate est BLOQUANT depuis que les dépendances ont été traitées :
+        // Spring Boot 3.4.4 -> 3.5.16, Spring Cloud 2024.0.1 -> 2025.0.3, plus
+        // Tomcat et Netty forcés aux premières versions corrigées. Les CVE
+        // CRITICAL réparables sont passées de 41 à 0 sur les 8 images.
+        //
+        // Deux scans, volontairement séparés :
+        //
+        //   1. BLOQUANT — CRITICAL --ignore-unfixed. Une CVE critique qui a un
+        //      correctif publié arrête le pipeline : rien n'est poussé sur le
+        //      registre, rien n'est déployé.
+        //
+        //      Pourquoi --ignore-unfixed : il reste 3 CVE CRITICAL sans aucun
+        //      correctif publié (perl-base, présent dans l'image Debian de base
+        //      de prediction-engine, qui est un service Python — ce Perl n'est
+        //      jamais exécuté). Bloquer dessus arrêterait le pipeline pour
+        //      quelque chose que personne ne peut corriger, et la seule issue
+        //      serait de désactiver le gate. Un gate qu'on désactive ne protège
+        //      plus rien.
+        //
+        //   2. INFORMATIF — HIGH. Affiché sans bloquer, le temps de traiter le
+        //      reste (images de base à rafraîchir, httpcore5, dépendances
+        //      Python de prediction-engine). À basculer en bloquant ensuite.
+        //
+        // Une CVE critique qu'on décide d'accepter se déclare dans .trivyignore,
+        // avec sa justification écrite — jamais en désactivant ce gate.
         stage('Scan sécurité — Trivy') {
             agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
             environment {
@@ -169,11 +183,28 @@ pipeline {
                 sh '''
                     IMG=${REGISTRY}/${NAMESPACE}/bct
                     TRIVY="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:latest"
-                    for svc in eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend; do
-                        echo "=== Scan Trivy : ${svc} ==="
-                        $TRIVY image --timeout 10m --severity HIGH,CRITICAL --exit-code 0 --no-progress ${IMG}-${svc}:${BUILD_NUMBER}
+                    SERVICES="eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend"
+
+                    echo "########## Scan INFORMATIF (HIGH) — n'arrête pas le pipeline ##########"
+                    for svc in $SERVICES; do
+                        echo "=== ${svc} ==="
+                        $TRIVY image --timeout 10m --severity HIGH --ignore-unfixed \\
+                               --exit-code 0 --no-progress ${IMG}-${svc}:${BUILD_NUMBER}
                     done
+
+                    echo "########## Scan BLOQUANT (CRITICAL) — arrête le pipeline ##########"
+                    for svc in $SERVICES; do
+                        echo "=== ${svc} ==="
+                        $TRIVY image --timeout 10m --severity CRITICAL --ignore-unfixed \\
+                               --exit-code 1 --no-progress ${IMG}-${svc}:${BUILD_NUMBER}
+                    done
+                    echo "Aucune CVE CRITICAL corrigeable sur les 8 images."
                 '''
+            }
+            post {
+                failure {
+                    echo "ÉCHEC VOLONTAIRE : au moins une CVE CRITICAL avec correctif publié a été trouvée. Rien n'a été poussé ni déployé. Corriger la dépendance concernée (voir le rapport ci-dessus), ou la déclarer dans .trivyignore avec sa justification."
+                }
             }
         }
 
