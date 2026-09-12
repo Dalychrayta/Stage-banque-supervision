@@ -30,11 +30,16 @@ def analyze_metrics_batch(metrics: List[MetricInput]):
 
 
 @router.post("/train")
-async def train_model(file: UploadFile = File(...), contamination: float = 0.05):
+async def train_model(file: UploadFile = File(...), contamination: float = 0.01):
     """Entraîne le modèle sur un fichier CSV de métriques historiques.
 
     contamination : proportion d'anomalies attendue dans les données (0.0-0.5).
-    À calibrer sur le taux réel observé, sinon le modèle sous- ou sur-détecte.
+    Attention, ce n'est pas une mesure mais un ORDRE : Isolation Forest
+    découpera cette fraction des données comme atypique, même si elles sont
+    toutes saines. À 0.05, sur des données normales collectées toutes les 30 s,
+    cela produisait environ 160 fausses alertes par jour. La valeur par défaut
+    est donc basse, et doit être relevée seulement si les données
+    d'entraînement contiennent réellement une proportion d'anomalies connue.
     """
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Fichier CSV requis.")

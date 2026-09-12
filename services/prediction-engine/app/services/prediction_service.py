@@ -56,6 +56,20 @@ class PredictionService:
             return "CRITICAL"
         return "WARNING"
 
+    def _severity_for(self, breaches: list[str], anomalous_metrics: list[str],
+                      flagged_by_model: bool) -> str:
+        """Gravite d'une anomalie explicable.
+
+        - seuil absolu franchi          -> CRITICAL, la machine est deja en danger
+        - deviation + profil atypique   -> CRITICAL, le modele confirme
+        - deviation seule               -> WARNING, derive a surveiller
+        """
+        if not anomalous_metrics:
+            return "NORMAL"
+        if breaches:
+            return "CRITICAL"
+        return "CRITICAL" if flagged_by_model else "WARNING"
+
     # Au-dela de ce nombre d'ecarts-types par rapport a la normale apprise,
     # une metrique est consideree comme deviante. 3 est la convention usuelle :
     # environ 99.7% des mesures normales restent en dessous.
@@ -138,13 +152,39 @@ class PredictionService:
         prediction = self.model.predict(features_scaled)[0]
         score = self.model.score_samples(features_scaled)[0]
 
-        is_anomaly = prediction == -1
-        severity = self._determine_severity(score, is_anomaly)
+        flagged_by_model = prediction == -1
+        breaches = self._absolute_threshold_breaches(metric)
         anomalous_metrics = self._identify_anomalous_metrics(metric)
 
-        recommendation = None
-        if is_anomaly:
-            recommendation = self._generate_recommendation(metric, anomalous_metrics)
+        # On n'escalade que ce qu'on sait expliquer.
+        #
+        # Isolation Forest ne mesure pas une proportion d'anomalies, il en
+        # decoupe une : le parametre contamination lui ORDONNE de considerer
+        # cette fraction des donnees comme atypique, meme si tout est sain.
+        # Observe en production : environ un incident toutes les 10 minutes,
+        # dont les deux tiers sans aucune metrique deviante, donc classes
+        # UNKNOWN par le RCA, donc jamais refermes. Une alerte que personne ne
+        # peut expliquer n'aide personne et finit par etre ignoree — c'est la
+        # fatigue d'alerte, et elle rend la supervision inutile.
+        #
+        # Un incident est donc ouvert des qu'une metrique est incriminable :
+        # soit un seuil absolu de danger est franchi, soit la metrique s'ecarte
+        # nettement de la normale APPRISE. Exiger en plus l'accord du modele
+        # serait une erreur : il etoufferait des derives pourtant flagrantes
+        # (une memoire a 12 ecarts-types au-dessus de son habitude) simplement
+        # parce que le reste du profil reste ordinaire.
+        #
+        # Le modele garde un role reel : il dit si la mesure est atypique DANS
+        # SON ENSEMBLE. Une metrique qui devie pendant que tout le reste est
+        # normal est une derive a surveiller (WARNING) ; la meme metrique qui
+        # devie alors que le profil entier est atypique est un vrai incident
+        # (CRITICAL). Et un signal du modele que rien n'explique n'est pas
+        # perdu : il ressort dans unexplained_model_flag.
+        unexplained = flagged_by_model and not anomalous_metrics
+        is_anomaly = bool(anomalous_metrics)
+
+        severity = self._severity_for(breaches, anomalous_metrics, flagged_by_model)
+        recommendation = self._generate_recommendation(metric, anomalous_metrics) if is_anomaly else None
 
         return PredictionResult(
             resource_id=metric.resource_id,
@@ -155,7 +195,8 @@ class PredictionService:
             confidence=min(abs(score), 1.0),
             severity=severity,
             anomalous_metrics=anomalous_metrics,
-            recommendation=recommendation
+            recommendation=recommendation,
+            unexplained_model_flag=unexplained
         )
 
     def _rule_based_prediction(self, metric: MetricInput) -> PredictionResult:

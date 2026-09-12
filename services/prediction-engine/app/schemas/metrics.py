@@ -50,3 +50,9 @@ class PredictionResult(BaseModel):
     severity: str = Field(..., description="NORMAL, WARNING, CRITICAL")
     anomalous_metrics: list[str] = Field(default_factory=list, description="Métriques anormales détectées")
     recommendation: Optional[str] = None
+    unexplained_model_flag: bool = Field(
+        default=False,
+        description="Le modèle a jugé la mesure atypique, mais aucune métrique ne dévie assez "
+                    "pour être nommée. On n'escalade pas — une alerte que personne ne peut "
+                    "expliquer ne fait qu'ajouter du bruit — mais l'information reste visible ici."
+    )
