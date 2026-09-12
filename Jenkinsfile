@@ -4,6 +4,14 @@ pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
+        // Délai maximum pour TOUT le pipeline, étapes futures comprises.
+        // Sans lui, une étape bloquée le reste indéfiniment — et comme les
+        // builds ne peuvent pas se chevaucher, elle bloque aussi tous les
+        // suivants. Constaté en vrai : un build interrompu par un redémarrage
+        // de Docker est resté 2 jours et 11 heures sur la construction des
+        // images, empêchant tout nouveau déploiement pendant ce temps.
+        // 90 minutes est large : un build complet prend moins de 15 minutes.
+        timeout(time: 90, unit: 'MINUTES')
     }
 
     stages {
