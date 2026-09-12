@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextareaModule } from 'primeng/inputtextarea';
 import { MessageService } from 'primeng/api';
 import { HeaderComponent } from '../../layout/header/header.component';
 import { ApiService } from '../../core/services/api.service';
@@ -16,7 +17,7 @@ import { Resource } from '../../core/models/resource.model';
 @Component({
   selector: 'app-healing',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, DropdownModule, ToastModule, DialogModule, HeaderComponent],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, DropdownModule, ToastModule, DialogModule, InputTextareaModule, HeaderComponent],
   providers: [MessageService],
   template: `
     <app-header title="Auto-Healing Engine"></app-header>
@@ -33,14 +34,17 @@ import { Resource } from '../../core/models/resource.model';
       <p-table [value]="actions" [rows]="pageSize" [paginator]="true" [lazy]="true" [totalRecords]="totalRecords"
                (onLazyLoad)="onPageChange($event)" styleClass="p-datatable-gridlines p-datatable-sm" [loading]="loading">
         <ng-template pTemplate="header">
-          <tr><th>Ressource</th><th>Action</th><th>Cause</th><th>Description</th><th>Statut</th><th>Type</th><th>Résultat</th><th>Date</th></tr>
+          <tr><th>Ressource</th><th>Action</th><th>Cause</th><th>Demandé par</th><th>Motif</th><th>Statut</th><th>Type</th><th>Résultat</th><th>Date</th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-a>
           <tr>
             <td><strong>{{ a.resourceName }}</strong></td>
             <td><span class="action-tag">{{ a.actionType }}</span></td>
             <td>{{ a.causeCategory }}</td>
-            <td class="desc-cell">{{ a.description }}</td>
+            <td><span [class]="isSystemActor(a.triggeredBy) ? 'actor-system' : 'actor-user'">
+                  <i [class]="isSystemActor(a.triggeredBy) ? 'pi pi-cog' : 'pi pi-user'"></i>
+                  {{ actorLabel(a.triggeredBy) }}</span></td>
+            <td class="desc-cell">{{ a.triggerReason || a.description }}</td>
             <td><span [class]="'ast ast-' + a.status?.toLowerCase()"><i [class]="getIcon(a.status)"></i> {{ a.status }}</span></td>
             <td><span [class]="a.isAutomatic ? 'auto-badge' : 'manual-badge'">{{ a.isAutomatic ? 'Auto' : 'Manuel' }}</span></td>
             <td class="result-cell">{{ a.resultMessage }}</td>
@@ -59,11 +63,16 @@ import { Resource } from '../../core/models/resource.model';
         <label>Action</label>
         <p-dropdown [options]="actionTypeOptions" [(ngModel)]="manualActionType"
                     placeholder="Choisir une action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+        <label>Motif <span class="required">obligatoire</span></label>
+        <textarea pInputTextarea [(ngModel)]="manualReason" rows="3"
+                  placeholder="Pourquoi cette action ? Ex. : mémoire saturée signalée par l'équipe réseau"></textarea>
+        <small class="reason-hint">Ce motif est enregistré avec votre nom dans le journal d'audit.</small>
       </div>
       <ng-template pTemplate="footer">
         <button pButton label="Annuler" class="p-button-text" (click)="showManualDialog = false"></button>
         <button pButton label="Déclencher" icon="pi pi-play" class="p-button-danger"
-                (click)="triggerManual()" [disabled]="!selectedResource || !manualActionType"></button>
+                (click)="triggerManual()"
+                [disabled]="!selectedResource || !manualActionType || !manualReason.trim()"></button>
       </ng-template>
     </p-dialog>
   `,
@@ -83,6 +92,11 @@ import { Resource } from '../../core/models/resource.model';
     .desc-cell, .result-cell { font-size: .8rem; color: #4a5568; max-width: 200px; }
     .manual-form { display: flex; flex-direction: column; gap: .75rem; padding: .5rem 0; }
     .manual-form label { font-weight: 600; font-size: .85rem; color: #2d3748; }
+    .manual-form textarea { width: 100%; font-family: inherit; font-size: .85rem; padding: .5rem; border: 1px solid #cbd5e0; border-radius: 6px; resize: vertical; }
+    .required { color: #e53e3e; font-weight: 500; font-size: .75rem; }
+    .reason-hint { color: #718096; font-size: .75rem; }
+    .actor-system { background: #edf2f7; color: #4a5568; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; white-space: nowrap; }
+    .actor-user   { background: #fffaf0; color: #b7791f; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; white-space: nowrap; }
   `]
 })
 export class HealingComponent implements OnInit {
@@ -94,6 +108,7 @@ export class HealingComponent implements OnInit {
   resourceOptions: { label: string; value: { id: string; name: string } }[] = [];
   selectedResource: { id: string; name: string } | null = null;
   manualActionType = '';
+  manualReason = '';
   actionTypeOptions = [{label:'Redémarrer le service',value:'RESTART_SERVICE'},{label:'Vider le cache',value:'CLEAR_CACHE'},{label:'Libérer espace disque',value:'FREE_DISK_SPACE'},{label:'Terminer processus CPU',value:'KILL_PROCESS'},{label:"Notifier l'équipe",value:'NOTIFY_TEAM'}];
 
   canOperate = false;
@@ -129,17 +144,31 @@ export class HealingComponent implements OnInit {
     return m[status] ?? 'pi pi-circle';
   }
 
+  /** "systeme:auto-healing" -> la plateforme ; "utilisateur:operator" -> un humain. */
+  isSystemActor(triggeredBy: string | undefined): boolean {
+    return !triggeredBy || triggeredBy.startsWith('systeme:');
+  }
+
+  /** Affiche "operator" ou "Plateforme" plutôt que la valeur technique stockée. */
+  actorLabel(triggeredBy: string | undefined): string {
+    if (!triggeredBy) return 'Plateforme';
+    if (triggeredBy.startsWith('utilisateur:')) return triggeredBy.substring('utilisateur:'.length);
+    return 'Plateforme';
+  }
+
   triggerManual(): void {
-    if (!this.selectedResource) return;
+    if (!this.selectedResource || !this.manualReason.trim()) return;
     const { id, name } = this.selectedResource;
-    this.api.triggerManualHealing(id, name, this.manualActionType).subscribe({
+    this.api.triggerManualHealing(id, name, this.manualActionType, this.manualReason.trim()).subscribe({
       next: a => {
         this.actions.unshift(a);
         this.showManualDialog = false;
         this.msg.add({severity:'success',summary:'Action déclenchée',detail:`${this.manualActionType} sur ${name}`});
-        this.selectedResource = null; this.manualActionType='';
+        this.selectedResource = null; this.manualActionType=''; this.manualReason='';
         this.api.getHealingStats().subscribe({next:s=>this.stats=s});
-      }
+      },
+      error: e => this.msg.add({severity:'error',summary:'Action refusée',
+        detail: e?.error?.error ?? "Vous n'avez pas le droit de déclencher cette action."})
     });
   }
 }

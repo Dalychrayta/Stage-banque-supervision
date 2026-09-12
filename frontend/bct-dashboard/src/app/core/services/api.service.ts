@@ -93,12 +93,18 @@ export class ApiService {
     return this.http.get<HealingStats>(`${API_BASE}/healing/stats`);
   }
 
-  triggerManualHealing(resourceId: string, resourceName: string, actionType: string): Observable<HealingAction> {
+  /**
+   * Le nom de l'utilisateur n'est volontairement pas envoyé : le service le lit
+   * dans le jeton Keycloak qu'il vérifie lui-même. Seul le motif est saisi ici.
+   */
+  triggerManualHealing(resourceId: string, resourceName: string, actionType: string,
+                       reason: string): Observable<HealingAction> {
     return this.http.post<HealingAction>(`${API_BASE}/healing/trigger`, null, {
       params: new HttpParams()
         .set('resourceId', resourceId)
         .set('resourceName', resourceName)
         .set('actionType', actionType)
+        .set('reason', reason)
     });
   }
 }

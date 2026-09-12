@@ -127,6 +127,21 @@ L'identité est gérée par **Keycloak** (conteneur `bct-keycloak`, realm `bct`,
 | `operator` | `dali1234` | OPERATOR |
 | `admin` | `dali1234` | ADMIN |
 
+### Journal d'audit — qui a demandé quoi, et pourquoi
+
+Chaque action de remédiation enregistre son **acteur** et son **motif**. Le champ n'est jamais vide :
+
+| | Acteur | Motif |
+|---|---|---|
+| Action humaine | `utilisateur:operator` | la justification saisie par l'opérateur, obligatoire |
+| Action automatique | `systeme:auto-healing` | la règle appliquée et l'incident d'origine, ex. `Regle DISK_FULL -> FREE_DISK_SPACE, incident #77` |
+
+Pour un humain la question est « qui a décidé », pour la machine c'est « sur quelle base ». Figer la règle dans l'enregistrement permet d'expliquer une action passée même si la table cause → action change ensuite.
+
+**Le nom n'est pas déclaré par le client, il est prouvé.** `auto-healing-service` est lui aussi un *resource server* OAuth2 ([SecurityConfig](services/auto-healing-service/src/main/java/com/bct/healing/config/SecurityConfig.java)) : il vérifie le jeton Keycloak et lit le nom dedans. C'est indispensable ici, parce que ce service exécute de vraies actions — si le nom arrivait dans un simple en-tête posé par la passerelle, quiconque peut joindre le service (port 8084) écrirait le nom de son choix, et le journal deviendrait falsifiable.
+
+Vérifié en direct sur le port 8084, sans passer par la passerelle : sans jeton → `401`, avec `rh` → `403`, sans motif → `400`, avec `operator` et un motif → l'action s'exécute réellement et la trace porte son nom.
+
 ### Secrets
 
 **Aucun mot de passe n'a de valeur par défaut dans le code.** `KEYCLOAK_ADMIN_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`, `ORACLE_SYS_PASSWORD` et les mots de passe de base par service doivent être fournis via l'environnement.

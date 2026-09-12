@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -109,11 +110,61 @@ class HealingServiceTest {
 
     @Test
     void triggerManual_shouldNeverBeMarkedAutomaticAndNeverResolveIncident() {
-        HealingAction result = healingService.triggerManual("srv-005", "manual-server", ActionType.CLEAR_CACHE);
+        HealingAction result = healingService.triggerManual(
+                "srv-005", "manual-server", ActionType.CLEAR_CACHE, "operator", "cache incoherent apres migration");
 
         assertThat(result.getIsAutomatic()).isFalse();
         assertThat(result.getActionType()).isEqualTo(ActionType.CLEAR_CACHE);
         verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    // --- Journal d'audit : qui a demandé l'action, et pourquoi ---
+
+    @Test
+    void triggerManual_shouldRecordTheHumanActorAndTheirJustification() {
+        HealingAction result = healingService.triggerManual(
+                "srv-002", "auth-server-01", ActionType.RESTART_SERVICE,
+                "operator", "memoire saturee signalee par l'equipe reseau");
+
+        assertThat(result.getTriggeredBy()).isEqualTo("utilisateur:operator");
+        assertThat(result.getTriggerReason()).isEqualTo("memoire saturee signalee par l'equipe reseau");
+    }
+
+    @Test
+    void triggerManual_shouldRefuseAnActionWithoutAJustification() {
+        // Une action manuelle non justifiée n'a aucune valeur pour un auditeur :
+        // elle est refusée avant d'atteindre la cible.
+        assertThatThrownBy(() -> healingService.triggerManual(
+                "srv-002", "auth-server-01", ActionType.RESTART_SERVICE, "operator", "   "))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> healingService.triggerManual(
+                "srv-002", "auth-server-01", ActionType.RESTART_SERVICE, "operator", null))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(realActionExecutor);
+    }
+
+    @Test
+    void triggerManual_shouldRefuseAnActionWithoutAnIdentifiedUser() {
+        assertThatThrownBy(() -> healingService.triggerManual(
+                "srv-002", "auth-server-01", ActionType.RESTART_SERVICE, null, "motif valable"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(realActionExecutor);
+    }
+
+    @Test
+    void triggerHealing_shouldAttributeTheActionToThePlatformAndRecordTheRuleApplied() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-001");
+        event.put("resourceName", "test-server");
+        event.put("causeCategory", "MEMORY_EXHAUSTION");
+        event.put("severity", "CRITICAL");
+        event.put("incidentId", 77L);
+
+        HealingAction result = healingService.triggerHealing(event);
+
+        assertThat(result.getTriggeredBy()).isEqualTo("systeme:auto-healing");
+        assertThat(result.getTriggerReason())
+                .isEqualTo("Regle MEMORY_EXHAUSTION -> RESTART_SERVICE, incident #77");
     }
 
     @Test

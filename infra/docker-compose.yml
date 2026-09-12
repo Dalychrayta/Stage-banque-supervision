@@ -228,6 +228,9 @@ services:
       ORACLE_HOST: oracle
       HEALING_DB_PASSWORD: ${HEALING_DB_PASSWORD}
       EUREKA_HOST: eureka-server
+      # Ce service vérifie les jetons lui-même (journal d'audit non falsifiable).
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}/realms/bct
+      KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/bct/protocol/openid-connect/certs
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       # Cible réelle : le SEUL conteneur que ce service a le droit de
       # redémarrer, et le SEUL dossier où il a le droit de supprimer.

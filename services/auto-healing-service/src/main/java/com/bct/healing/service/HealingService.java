@@ -55,6 +55,8 @@ public class HealingService {
                 .description(rule.description())
                 .status(ActionStatus.IN_PROGRESS)
                 .isAutomatic(rule.isAutomatic())
+                .triggeredBy(HealingAction.SYSTEM_ACTOR)
+                .triggerReason(automaticReason(causeCategory, rule.actionType(), incidentId))
                 .triggeredAt(LocalDateTime.now())
                 .build();
 
@@ -79,6 +81,16 @@ public class HealingService {
         }
 
         return saved;
+    }
+
+    /**
+     * Motif d'une action décidée par la plateforme. On y fige la règle telle
+     * qu'elle était au moment de la décision : si la table cause → action
+     * change plus tard, les actions passées restent explicables.
+     */
+    static String automaticReason(String causeCategory, ActionType actionType, Long incidentId) {
+        String base = "Regle " + causeCategory + " -> " + actionType;
+        return incidentId == null ? base : base + ", incident #" + incidentId;
     }
 
     private HealingRule selectRule(String causeCategory, String severity) {
@@ -165,9 +177,21 @@ public class HealingService {
         );
     }
 
+    /**
+     * Action déclenchée par un humain. Le nom vient du jeton Keycloak vérifié
+     * par ce service, et la justification est obligatoire : devoir écrire
+     * pourquoi on redémarre un serveur de production fait partie du contrôle.
+     */
     @Transactional
-    public HealingAction triggerManual(String resourceId, String resourceName, ActionType actionType) {
-        HealingRule rule = new HealingRule(actionType, "Action manuelle déclenchée par opérateur", false);
+    public HealingAction triggerManual(String resourceId, String resourceName, ActionType actionType,
+                                       String username, String reason) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Action manuelle sans utilisateur identifie");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Une action manuelle doit etre justifiee");
+        }
+        HealingRule rule = new HealingRule(actionType, "Action manuelle declenchee par " + username, false);
         HealingAction action = HealingAction.builder()
                 .resourceId(resourceId)
                 .resourceName(resourceName)
@@ -175,6 +199,8 @@ public class HealingService {
                 .description(rule.description())
                 .status(ActionStatus.IN_PROGRESS)
                 .isAutomatic(false)
+                .triggeredBy(HealingAction.USER_ACTOR_PREFIX + username)
+                .triggerReason(reason.trim())
                 .triggeredAt(LocalDateTime.now())
                 .build();
         HealingAction saved = repository.save(action);

@@ -42,6 +42,10 @@ export interface HealingAction {
   triggeredAt: string;
   completedAt: string;
   isAutomatic: boolean;
+  /** "utilisateur:<nom>" ou "systeme:auto-healing" — jamais vide pour une action récente. */
+  triggeredBy?: string;
+  /** Justification saisie par l'opérateur, ou règle appliquée par la plateforme. */
+  triggerReason?: string;
 }
 
 export interface HealingStats {
