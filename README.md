@@ -87,7 +87,9 @@ Puis ouvrir **http://localhost:4200**.
 
 **5. Cible réelle — optionnel (`srv-002` / `auth-server-01`)**
 
-Une des 5 ressources surveillées (`srv-002`) n'est pas simulée : c'est un ancien projet perso (`PlatformeBack`, hors de ce repo) relancé comme vraie cible de test, monitoré via son endpoint Actuator réel et réellement redémarré par l'auto-healing en cas d'incident. Sans cette cible, tout continue de fonctionner normalement — les 4 autres ressources restent simulées comme d'habitude, et `srv-002` apparaît juste `DOWN` sur le tableau de bord.
+La plateforme ne surveille **aucune ressource simulée**. Les 4 ressources fabriquées d'origine ont été retirées en cours de projet (commit `478416a`) : leurs données inventées faussaient l'apprentissage du modèle, qui apprenait un comportement qui n'existe pas. Le modèle est depuis entraîné uniquement sur les vraies métriques de `srv-002`.
+
+La seule ressource supervisée est donc réelle : `PlatformeBack`, un ancien projet perso (hors de ce repo) relancé comme vraie cible de test, dont les métriques sont lues sur son endpoint Actuator réel et sur laquelle l'auto-remédiation agit réellement. Si la cible n'est pas démarrée, la plateforme continue de tourner normalement : `srv-002` apparaît simplement `DOWN` sur le tableau de bord — ce qui est d'ailleurs le comportement attendu, c'est exactement ce que le collecteur sert à détecter.
 
 La cible est **conteneurisée** (services `platformeback` et `platformeback-mysql`). Ce n'est pas un détail de confort : `auto-healing-service` tourne lui-même dans un conteneur, et un conteneur est isolé de la machine hôte par conception — il ne pourrait ni voir ni redémarrer un processus lancé à la main sur Windows. En mettant la cible dans le même monde, les deux actions réelles deviennent possibles :
 
