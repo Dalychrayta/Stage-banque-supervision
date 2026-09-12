@@ -56,8 +56,18 @@ class PredictionService:
             return "CRITICAL"
         return "WARNING"
 
-    def _identify_anomalous_metrics(self, metric: MetricInput) -> list[str]:
-        """Identifie les métriques qui dépassent des seuils critiques."""
+    # Au-dela de ce nombre d'ecarts-types par rapport a la normale apprise,
+    # une metrique est consideree comme deviante. 3 est la convention usuelle :
+    # environ 99.7% des mesures normales restent en dessous.
+    DEVIATION_SIGMAS = 3.0
+
+    def _absolute_threshold_breaches(self, metric: MetricInput) -> list[str]:
+        """Seuils absolus de danger, independants de ce que le modele a appris.
+
+        Ils restent necessaires : une machine a 95% de CPU est en danger meme si
+        elle a toujours tourne ainsi, donc meme si le modele a appris que c'etait
+        sa normale.
+        """
         anomalous = []
         if metric.cpu_usage > 85:
             anomalous.append(f"cpu_usage={metric.cpu_usage:.1f}%")
@@ -66,9 +76,53 @@ class PredictionService:
         if metric.disk_usage > 90:
             anomalous.append(f"disk_usage={metric.disk_usage:.1f}%")
         if metric.response_time_ms and metric.response_time_ms > 2000:
-            anomalous.append(f"response_time={metric.response_time_ms:.0f}ms")
+            anomalous.append(f"response_time_ms={metric.response_time_ms:.0f}ms")
         if metric.error_rate and metric.error_rate > 5:
             anomalous.append(f"error_rate={metric.error_rate:.1f}%")
+        return anomalous
+
+    def _statistical_deviations(self, metric: MetricInput) -> list[str]:
+        """Metriques qui s'ecartent de la normale APPRISE par le modele.
+
+        Sans ceci, le moteur ne savait nommer une metrique que si elle depassait
+        un seuil catastrophique (>90%). Il pouvait donc declarer une anomalie
+        tout en renvoyant une liste vide : le RCA ne recevait aucune piste et
+        classait l'incident en UNKNOWN, ce qui laissait l'incident ouvert.
+
+        Le scaler porte deja la moyenne et l'ecart-type appris par metrique :
+        on s'en sert pour dire de combien chaque metrique devie, plutot que
+        d'inventer de nouveaux seuils.
+        """
+        if self.scaler is None:
+            return []
+        values = self._extract_features(metric)[0]
+        means = getattr(self.scaler, "mean_", None)
+        scales = getattr(self.scaler, "scale_", None)
+        if means is None or scales is None:
+            return []
+
+        deviations = []
+        for name, value, mean, scale in zip(FEATURE_COLUMNS, values, means, scales):
+            # Une metrique constante dans les donnees d'entrainement a un
+            # ecart-type nul : toute comparaison y serait infinie, on l'ignore.
+            if scale is None or scale <= 1e-9:
+                continue
+            z = (value - mean) / scale
+            if abs(z) >= self.DEVIATION_SIGMAS:
+                sens = "au-dessus" if z > 0 else "en-dessous"
+                deviations.append((abs(z), f"{name}={value:.1f} ({abs(z):.1f} ecarts-types {sens} de la normale)"))
+        # La metrique la plus deviante en premier : c'est la piste principale
+        # pour le diagnostic.
+        deviations.sort(key=lambda d: d[0], reverse=True)
+        return [label for _, label in deviations]
+
+    def _identify_anomalous_metrics(self, metric: MetricInput) -> list[str]:
+        """Metriques a incriminer : depassement absolu d'abord, puis deviation apprise."""
+        anomalous = self._absolute_threshold_breaches(metric)
+        already_named = {label.split("=")[0] for label in anomalous}
+        for deviation in self._statistical_deviations(metric):
+            if deviation.split("=")[0] not in already_named:
+                anomalous.append(deviation)
         return anomalous
 
     def predict(self, metric: MetricInput) -> PredictionResult:

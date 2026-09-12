@@ -54,7 +54,10 @@ public class HealingService {
                 .causeCategory(causeCategory)
                 .description(rule.description())
                 .status(ActionStatus.IN_PROGRESS)
-                .isAutomatic(rule.isAutomatic())
+                // Décidée par la plateforme, donc automatique — quelle que soit
+                // la règle. À ne pas confondre avec rule.fixesIncident(), qui dit
+                // si l'action referme le problème toute seule.
+                .isAutomatic(true)
                 .triggeredBy(HealingAction.SYSTEM_ACTOR)
                 .triggerReason(automaticReason(causeCategory, rule.actionType(), incidentId))
                 .triggeredAt(LocalDateTime.now())
@@ -72,11 +75,10 @@ public class HealingService {
         log.info("Action {} exécutée pour {} — statut: {} — résultat: {}",
                 rule.actionType(), resourceId, saved.getStatus(), result.message());
 
-        // Une action automatique referme l'incident RCA d'origine uniquement
-        // si elle a réellement réussi. Les actions non automatiques
-        // (NOTIFY_TEAM) ou échouées laissent l'incident ouvert pour
-        // intervention humaine.
-        if (rule.isAutomatic() && result.success() && incidentId != null) {
+        // L'incident RCA n'est refermé que si l'action le répare vraiment et
+        // qu'elle a réussi. NOTIFY_TEAM prévient un humain sans rien réparer :
+        // l'incident reste donc ouvert, en attente d'intervention.
+        if (rule.fixesIncident() && result.success() && incidentId != null) {
             rcaServiceClient.resolveIncident(incidentId);
         }
 
@@ -211,5 +213,12 @@ public class HealingService {
         return repository.save(saved);
     }
 
-    record HealingRule(ActionType actionType, String description, boolean isAutomatic) {}
+    /**
+     * Une règle de remédiation. fixesIncident dit si l'action règle le problème
+     * toute seule : NOTIFY_TEAM, par exemple, prévient un humain mais ne répare
+     * rien, donc l'incident reste ouvert. Ce n'est PAS la même chose que
+     * "déclenchée automatiquement" — cette confusion faisait afficher "Manuel"
+     * sur des actions décidées par la plateforme.
+     */
+    record HealingRule(ActionType actionType, String description, boolean fixesIncident) {}
 }

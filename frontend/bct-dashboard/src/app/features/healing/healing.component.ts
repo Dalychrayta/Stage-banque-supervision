@@ -46,7 +46,7 @@ import { Resource } from '../../core/models/resource.model';
                   {{ actorLabel(a.triggeredBy) }}</span></td>
             <td class="desc-cell">{{ a.triggerReason || a.description }}</td>
             <td><span [class]="'ast ast-' + a.status?.toLowerCase()"><i [class]="getIcon(a.status)"></i> {{ a.status }}</span></td>
-            <td><span [class]="a.isAutomatic ? 'auto-badge' : 'manual-badge'">{{ a.isAutomatic ? 'Auto' : 'Manuel' }}</span></td>
+            <td><span [class]="isSystemActor(a.triggeredBy) ? 'auto-badge' : 'manual-badge'">{{ isSystemActor(a.triggeredBy) ? 'Auto' : 'Manuel' }}</span></td>
             <td class="result-cell">{{ a.resultMessage }}</td>
             <td>{{ a.triggeredAt | date:'dd/MM HH:mm' }}</td>
           </tr>

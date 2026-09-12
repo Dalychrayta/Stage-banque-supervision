@@ -120,12 +120,71 @@ public class RcaService {
             );
         }
 
+        // Aucun seuil absolu franchi. Cela ne veut pas dire qu'il n'y a rien :
+        // le moteur d'IA compare au comportement NORMAL APPRIS de la ressource,
+        // pas à des seuils universels. Une mémoire qui double par rapport à sa
+        // normale est une vraie alerte, même à 40 % — c'est même le seul moyen
+        // de voir venir une panne avant qu'elle n'atteigne 90 %.
+        //
+        // On exploite donc la métrique que le moteur a désignée comme la plus
+        // déviante. Confiance plus basse que pour un seuil absolu : on sait
+        // QUOI dévie, on est moins sûr de la cause exacte.
+        RcaResult fromDeviation = classifyFromDeviation(event);
+        if (fromDeviation != null) {
+            return fromDeviation;
+        }
+
         return new RcaResult(
                 "UNKNOWN",
                 "Anomalie détectée sans cause clairement identifiée. Analyse manuelle recommandée.",
                 0.50,
                 "Consulter les logs détaillés et contacter l'équipe technique."
         );
+    }
+
+    /**
+     * Traduit la métrique la plus déviante signalée par le moteur d'IA en cause
+     * probable. La liste arrive triée : la plus déviante d'abord.
+     */
+    private RcaResult classifyFromDeviation(Map<String, Object> event) {
+        String flagged = firstFlaggedMetric(event);
+        if (flagged == null) {
+            return null;
+        }
+        return switch (flagged) {
+            case "cpu_usage" -> new RcaResult("CPU_SATURATION",
+                    "CPU nettement au-dessus du comportement habituel de la ressource.", 0.65,
+                    "Identifier les processus récemment lancés avant que la saturation ne soit atteinte.");
+            case "memory_usage" -> new RcaResult("MEMORY_EXHAUSTION",
+                    "Mémoire nettement au-dessus du comportement habituel — fuite mémoire possible.", 0.65,
+                    "Surveiller la tendance mémoire et redémarrer le service avant saturation.");
+            case "disk_usage" -> new RcaResult("DISK_FULL",
+                    "Occupation disque nettement au-dessus de l'habitude — croissance anormale.", 0.65,
+                    "Identifier les fichiers en croissance et nettoyer les logs anciens.");
+            case "response_time_ms" -> new RcaResult("HIGH_LATENCY",
+                    "Temps de réponse nettement au-dessus de l'habitude — dégradation en cours.", 0.65,
+                    "Vérifier les requêtes lentes et la charge des dépendances.");
+            case "error_rate" -> new RcaResult("HIGH_ERROR_RATE",
+                    "Taux d'erreur nettement au-dessus de l'habitude.", 0.65,
+                    "Analyser les logs d'erreurs récents du service.");
+            default -> null;
+        };
+    }
+
+    /**
+     * Nom de la première métrique signalée par le moteur. Le champ arrive soit
+     * comme liste (message Kafka), soit comme texte (relecture d'un incident) —
+     * on accepte les deux plutôt que de dépendre d'une forme précise.
+     */
+    static String firstFlaggedMetric(Map<String, Object> event) {
+        Object raw = event.get("anomalousMetrics");
+        if (raw == null) return null;
+        String text = raw instanceof List<?> list
+                ? (list.isEmpty() ? "" : String.valueOf(list.get(0)))
+                : String.valueOf(raw).replace("[", "").replace("]", "");
+        if (text.isBlank()) return null;
+        String name = text.split("=")[0].trim();
+        return name.isEmpty() ? null : name;
     }
 
     private Double getDouble(Map<String, Object> map, String key) {

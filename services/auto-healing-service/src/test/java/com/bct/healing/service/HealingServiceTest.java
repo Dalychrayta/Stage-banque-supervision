@@ -51,17 +51,25 @@ class HealingServiceTest {
         );
     }
 
-    @ParameterizedTest(name = "{0} -> {1} (automatique={2})")
+    @ParameterizedTest(name = "{0} -> {1} (repare l'incident={2})")
     @MethodSource("ruleScenarios")
-    void triggerHealing_shouldSelectCorrectActionForCause(String causeCategory, ActionType expectedAction, boolean expectedAutomatic) {
+    void triggerHealing_shouldSelectCorrectActionForCause(String causeCategory, ActionType expectedAction, boolean expectedFixesIncident) {
         Map<String, Object> event = baseEvent(causeCategory, 10L);
 
         HealingAction result = healingService.triggerHealing(event);
 
         assertThat(result.getActionType()).isEqualTo(expectedAction);
-        assertThat(result.getIsAutomatic()).isEqualTo(expectedAutomatic);
+        // Décidée par la plateforme : automatique dans TOUS les cas, y compris
+        // NOTIFY_TEAM qui ne répare rien. Les deux notions sont distinctes.
+        assertThat(result.getIsAutomatic()).isTrue();
         assertThat(result.getStatus()).isEqualTo(ActionStatus.SUCCESS);
         assertThat(result.getResultMessage()).isNotBlank();
+        // L'incident n'est refermé que par une action qui répare vraiment.
+        if (expectedFixesIncident) {
+            verify(rcaServiceClient, times(1)).resolveIncident(10L);
+        } else {
+            verify(rcaServiceClient, never()).resolveIncident(any());
+        }
     }
 
     @Test

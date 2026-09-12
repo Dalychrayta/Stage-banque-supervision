@@ -71,6 +71,71 @@ class RcaServiceTest {
         assertThat(result.getStatus()).isEqualTo(AnalysisStatus.OPEN);
     }
 
+    // --- Diagnostic quand aucun seuil absolu n'est franchi ---
+    //
+    // Le moteur d'IA compare au comportement NORMAL APPRIS de la ressource, pas
+    // à des seuils universels. Une mémoire qui double par rapport à son habitude
+    // est une vraie alerte, même à 40 % — et c'est le seul moyen de voir venir
+    // une panne avant qu'elle n'atteigne 90 %. Sans ces règles, ces anomalies
+    // tombaient toutes en UNKNOWN, l'incident restait ouvert, et la plateforme
+    // noyait l'opérateur sous des notifications sans cause.
+
+    @Test
+    void analyzeAnomaly_shouldUseTheMostDeviantMetricWhenNoAbsoluteThresholdIsCrossed() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-002");
+        event.put("memoryUsage", 41.0);   // très en dessous du seuil absolu de 90 %
+        event.put("cpuUsage", 12.0);
+        event.put("anomalousMetrics", List.of(
+                "memory_usage=41.0 (4.2 ecarts-types au-dessus de la normale)",
+                "cpu_usage=12.0 (3.1 ecarts-types au-dessus de la normale)"));
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        assertThat(result.getCauseCategory()).isEqualTo("MEMORY_EXHAUSTION");
+        // Moins sûr qu'un dépassement de seuil absolu : on sait QUOI dévie,
+        // moins bien POURQUOI.
+        assertThat(result.getConfidenceScore()).isLessThan(0.88);
+    }
+
+    @Test
+    void analyzeAnomaly_shouldStillPreferAnAbsoluteThresholdOverADeviation() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-002");
+        event.put("diskUsage", 96.0);
+        event.put("anomalousMetrics", List.of("cpu_usage=12.0 (3.1 ecarts-types au-dessus de la normale)"));
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        assertThat(result.getCauseCategory()).isEqualTo("DISK_FULL");
+    }
+
+    @Test
+    void analyzeAnomaly_shouldStayUnknownWhenTheEngineNamesNoMetric() {
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-002");
+        event.put("cpuUsage", 12.0);
+        event.put("anomalousMetrics", List.of());
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        assertThat(result.getCauseCategory()).isEqualTo("UNKNOWN");
+    }
+
+    @Test
+    void firstFlaggedMetric_shouldAcceptBothAListAndItsTextForm() {
+        // Le champ arrive en liste dans le message Kafka, en texte quand on
+        // relit un incident enregistré. Les deux doivent marcher.
+        assertThat(RcaService.firstFlaggedMetric(
+                Map.of("anomalousMetrics", List.of("memory_usage=41.0 (4.2 ecarts-types)"))))
+                .isEqualTo("memory_usage");
+        assertThat(RcaService.firstFlaggedMetric(
+                Map.of("anomalousMetrics", "[disk_usage=93.0 (5.0 ecarts-types)]")))
+                .isEqualTo("disk_usage");
+        assertThat(RcaService.firstFlaggedMetric(Map.of("anomalousMetrics", "[]"))).isNull();
+        assertThat(RcaService.firstFlaggedMetric(Map.of())).isNull();
+    }
+
     @Test
     void analyzeAnomaly_shouldPrioritizeCpuOverOtherCauses() {
         // Quand plusieurs seuils sont dépassés, CPU doit être détecté en premier (ordre des règles)
