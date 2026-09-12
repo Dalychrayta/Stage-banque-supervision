@@ -90,6 +90,10 @@ services:
     image: ghcr.io/dalychrayta/bct-eureka-server:latest
     container_name: bct-eureka-server
     environment:
+      # Expedition des logs vers Loki. Sans cette variable, l'appender
+      # retombe sur localhost:3100 — qui, depuis un conteneur, ne designe
+      # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
+      LOKI_URL: http://loki:3100
       JAVA_TOOL_OPTIONS: "-Xmx200m"
     mem_limit: 350m
     ports:
@@ -127,6 +131,10 @@ services:
       - keycloak
     environment:
       EUREKA_HOST: eureka-server
+      # Expedition des logs vers Loki. Sans cette variable, l'appender
+      # retombe sur localhost:3100 — qui, depuis un conteneur, ne designe
+      # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
+      LOKI_URL: http://loki:3100
       # Le navigateur est hors Docker, ce service est dedans : ils ne voient
       # pas Keycloak à la même adresse. On sépare donc les deux usages —
       #   ISSUER : l'émetteur annoncé dans le jeton, qu'on vérifie (adresse navigateur)
@@ -155,6 +163,10 @@ services:
       ORACLE_HOST: oracle
       DISCOVERY_DB_PASSWORD: ${DISCOVERY_DB_PASSWORD}
       EUREKA_HOST: eureka-server
+      # Expedition des logs vers Loki. Sans cette variable, l'appender
+      # retombe sur localhost:3100 — qui, depuis un conteneur, ne designe
+      # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
+      LOKI_URL: http://loki:3100
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JAVA_TOOL_OPTIONS: "-Xmx250m"
     mem_limit: 400m
@@ -180,6 +192,10 @@ services:
       ORACLE_HOST: oracle
       COLLECTOR_DB_PASSWORD: ${COLLECTOR_DB_PASSWORD}
       EUREKA_HOST: eureka-server
+      # Expedition des logs vers Loki. Sans cette variable, l'appender
+      # retombe sur localhost:3100 — qui, depuis un conteneur, ne designe
+      # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
+      LOKI_URL: http://loki:3100
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       PREDICTION_ENGINE_URL: http://prediction-engine:8000
       DISCOVERY_SERVICE_URL: http://discovery-service:8081
@@ -207,6 +223,10 @@ services:
       ORACLE_HOST: oracle
       RCA_DB_PASSWORD: ${RCA_DB_PASSWORD}
       EUREKA_HOST: eureka-server
+      # Expedition des logs vers Loki. Sans cette variable, l'appender
+      # retombe sur localhost:3100 — qui, depuis un conteneur, ne designe
+      # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
+      LOKI_URL: http://loki:3100
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JAVA_TOOL_OPTIONS: "-Xmx250m"
     mem_limit: 400m
@@ -228,6 +248,10 @@ services:
       ORACLE_HOST: oracle
       HEALING_DB_PASSWORD: ${HEALING_DB_PASSWORD}
       EUREKA_HOST: eureka-server
+      # Expedition des logs vers Loki. Sans cette variable, l'appender
+      # retombe sur localhost:3100 — qui, depuis un conteneur, ne designe
+      # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
+      LOKI_URL: http://loki:3100
       # Ce service vérifie les jetons lui-même (journal d'audit non falsifiable).
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}/realms/bct
       KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/bct/protocol/openid-connect/certs

@@ -18,9 +18,16 @@ env/
 *.egg-info/
 dist/
 .pytest_cache/
-services/prediction-engine/app/models/
 *.pkl
 *.joblib
+# Exception : le modèle entraîné EST versionné. Il était exclu, et la
+# conséquence était grave : Jenkins construit depuis un clone git, donc
+# l'image déployée partait sans modèle et le moteur retombait sur son mode
+# de secours à seuils fixes — plus d'IA du tout en production, alors que
+# tout marchait sur le poste de développement. Le versionner lie aussi le
+# modèle à la version du code qui l'accompagne (950 Ko au total).
+!services/prediction-engine/app/models/isolation_forest.pkl
+!services/prediction-engine/app/models/scaler.pkl
 services/prediction-engine/data/*
 !services/prediction-engine/data/README.md
 
