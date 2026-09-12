@@ -152,26 +152,24 @@ pipeline {
         // Tomcat et Netty forcés aux premières versions corrigées. Les CVE
         // CRITICAL réparables sont passées de 41 à 0 sur les 8 images.
         //
-        // Deux scans, volontairement séparés :
+        // Le gate bloque sur HIGH et CRITICAL, avec --ignore-unfixed : toute
+        // vulnérabilité qui a un correctif publié arrête le pipeline — rien
+        // n'est poussé sur le registre, rien n'est déployé.
         //
-        //   1. BLOQUANT — CRITICAL --ignore-unfixed. Une CVE critique qui a un
-        //      correctif publié arrête le pipeline : rien n'est poussé sur le
-        //      registre, rien n'est déployé.
+        // Pourquoi --ignore-unfixed : il reste 54 vulnérabilités (51 HIGH,
+        // 3 CRITICAL) sans AUCUN correctif publié, principalement dans l'image
+        // Debian de base de prediction-engine (dont perl-base — un service
+        // Python, ce Perl n'est jamais exécuté). Bloquer dessus arrêterait le
+        // pipeline pour quelque chose que personne ne peut corriger, et la
+        // seule issue serait de désactiver le gate. Un gate qu'on désactive ne
+        // protège plus rien.
         //
-        //      Pourquoi --ignore-unfixed : il reste 3 CVE CRITICAL sans aucun
-        //      correctif publié (perl-base, présent dans l'image Debian de base
-        //      de prediction-engine, qui est un service Python — ce Perl n'est
-        //      jamais exécuté). Bloquer dessus arrêterait le pipeline pour
-        //      quelque chose que personne ne peut corriger, et la seule issue
-        //      serait de désactiver le gate. Un gate qu'on désactive ne protège
-        //      plus rien.
+        // Un second scan, informatif, liste ces 54 sans bloquer : elles restent
+        // visibles et devront être reprises quand leurs correctifs sortiront.
         //
-        //   2. INFORMATIF — HIGH. Affiché sans bloquer, le temps de traiter le
-        //      reste (images de base à rafraîchir, httpcore5, dépendances
-        //      Python de prediction-engine). À basculer en bloquant ensuite.
-        //
-        // Une CVE critique qu'on décide d'accepter se déclare dans .trivyignore,
-        // avec sa justification écrite — jamais en désactivant ce gate.
+        // Une vulnérabilité qu'on décide d'accepter se déclare dans
+        // .trivyignore, avec sa justification écrite — jamais en désactivant
+        // ce gate.
         stage('Scan sécurité — Trivy') {
             agent { node { label 'built-in'; customWorkspace 'ws-docker-images' } }
             environment {
@@ -185,20 +183,21 @@ pipeline {
                     TRIVY="docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:latest"
                     SERVICES="eureka-server api-gateway discovery-service collector-service rca-service auto-healing-service prediction-engine frontend"
 
-                    echo "########## Scan INFORMATIF (HIGH) — n'arrête pas le pipeline ##########"
+                    echo "########## Rapport complet — INFORMATIF, ne bloque pas ##########"
+                    echo "Inclut les vulnérabilités sans correctif publié, qui ne peuvent pas être corrigées aujourd'hui."
                     for svc in $SERVICES; do
                         echo "=== ${svc} ==="
-                        $TRIVY image --timeout 10m --severity HIGH --ignore-unfixed \\
+                        $TRIVY image --timeout 10m --severity HIGH,CRITICAL \\
                                --exit-code 0 --no-progress ${IMG}-${svc}:${BUILD_NUMBER}
                     done
 
-                    echo "########## Scan BLOQUANT (CRITICAL) — arrête le pipeline ##########"
+                    echo "########## Avec correctif publié — BLOQUANT ##########"
                     for svc in $SERVICES; do
                         echo "=== ${svc} ==="
-                        $TRIVY image --timeout 10m --severity CRITICAL --ignore-unfixed \\
+                        $TRIVY image --timeout 10m --severity HIGH,CRITICAL --ignore-unfixed \\
                                --exit-code 1 --no-progress ${IMG}-${svc}:${BUILD_NUMBER}
                     done
-                    echo "Aucune CVE CRITICAL corrigeable sur les 8 images."
+                    echo "Aucune CVE HIGH ou CRITICAL corrigeable sur les 8 images."
                 '''
             }
             post {
