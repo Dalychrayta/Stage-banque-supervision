@@ -7,6 +7,7 @@ import com.bct.healing.model.HealingAction;
 import com.bct.healing.repository.HealingActionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,10 @@ public class HealingService {
     private final HealingActionRepository repository;
     private final RcaServiceClient rcaServiceClient;
     private final RealActionExecutor realActionExecutor;
+
+    /** Durée pendant laquelle la plateforme ne rejoue pas la même action sur la même ressource. */
+    @Value("${healing.cooldown-minutes:10}")
+    private int cooldownMinutes = 10;
 
     /**
      * Détermine et déclenche l'action de remédiation selon la catégorie RCA.
@@ -45,6 +50,20 @@ public class HealingService {
         }
 
         HealingRule rule = selectRule(causeCategory, severity);
+
+        // Délai de garde : on n'exécute pas deux fois la même action sur la même
+        // ressource coup sur coup.
+        //
+        // Observé en vrai : un redémarrage fait démarrer la JVM, qui consomme
+        // ~95 % de CPU pendant quelques secondes ; le collecteur mesure ce pic,
+        // le modèle y voit une saturation CPU, le RCA diagnostique
+        // CPU_SATURATION, la remédiation redémarre — et ainsi de suite. La
+        // plateforme entretenait elle-même le problème qu'elle croyait soigner.
+        // C'est le battement (flapping), et sans garde-fou il peut redémarrer un
+        // serveur de production en boucle.
+        if (isWithinCooldown(resourceId, rule.actionType())) {
+            return saveSkippedAction(resourceId, resourceName, incidentId, causeCategory, rule);
+        }
 
         HealingAction action = HealingAction.builder()
                 .resourceId(resourceId)
@@ -83,6 +102,50 @@ public class HealingService {
         }
 
         return saved;
+    }
+
+    /**
+     * Vrai si la même action a déjà été exécutée sur cette ressource il y a
+     * moins de {@code cooldownMinutes}. Ne s'applique qu'aux actions décidées
+     * par la plateforme : un humain qui déclenche une action, justification à
+     * l'appui, sait ce qu'il fait et n'a pas à être bridé par ce garde-fou.
+     */
+    private boolean isWithinCooldown(String resourceId, ActionType actionType) {
+        return repository
+                .findFirstByResourceIdAndActionTypeAndStatusNotOrderByTriggeredAtDesc(
+                        resourceId, actionType, ActionStatus.SKIPPED)
+                .map(HealingAction::getTriggeredAt)
+                .filter(last -> last.isAfter(LocalDateTime.now().minusMinutes(cooldownMinutes)))
+                .isPresent();
+    }
+
+    /**
+     * Enregistre l'action refusée au lieu de la passer sous silence : un
+     * auditeur doit pouvoir voir que la plateforme a voulu agir, et pourquoi
+     * elle s'en est abstenue.
+     */
+    private HealingAction saveSkippedAction(String resourceId, String resourceName, Long incidentId,
+                                            String causeCategory, HealingRule rule) {
+        log.info("Action {} sur {} ignorée — délai de garde de {} min non écoulé",
+                rule.actionType(), resourceId, cooldownMinutes);
+        HealingAction skipped = HealingAction.builder()
+                .resourceId(resourceId)
+                .resourceName(resourceName)
+                .incidentId(incidentId)
+                .actionType(rule.actionType())
+                .causeCategory(causeCategory)
+                .description(rule.description())
+                .status(ActionStatus.SKIPPED)
+                .isAutomatic(true)
+                .triggeredBy(HealingAction.SYSTEM_ACTOR)
+                .triggerReason(automaticReason(causeCategory, rule.actionType(), incidentId))
+                .resultMessage(String.format(
+                        "Action non exécutée : la même action a déjà été appliquée sur cette ressource "
+                                + "il y a moins de %d minutes (délai de garde anti-battement).", cooldownMinutes))
+                .triggeredAt(LocalDateTime.now())
+                .completedAt(LocalDateTime.now())
+                .build();
+        return repository.save(skipped);
     }
 
     /**

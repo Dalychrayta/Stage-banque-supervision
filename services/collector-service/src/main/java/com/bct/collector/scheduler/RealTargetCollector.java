@@ -39,6 +39,10 @@ public class RealTargetCollector {
     @Value("${real-target.actuator-url:http://localhost:8085/actuator}")
     private String actuatorBaseUrl;
 
+    /** Durée après un démarrage pendant laquelle les mesures ne sont pas analysées. */
+    @Value("${real-target.warmup-seconds:120}")
+    private int warmupSeconds = 120;
+
     private WebClient client() {
         return WebClient.create(actuatorBaseUrl);
     }
@@ -81,6 +85,22 @@ public class RealTargetCollector {
                     .collectedAt(LocalDateTime.now())
                     .build();
 
+            // Période de chauffe : on interroge la cible sur SON propre temps de
+            // fonctionnement. Juste après un redémarrage, une JVM qui démarre
+            // consomme presque tout le CPU pendant quelques secondes — c'est
+            // normal. Analysée comme une anomalie, cette mesure déclenchait un
+            // redémarrage, donc un nouveau démarrage, donc une nouvelle alerte :
+            // la plateforme entretenait le problème qu'elle croyait soigner.
+            double uptimeSeconds = fetchMetricValue("/metrics/process.uptime");
+            if (isWarmingUp(uptimeSeconds, warmupSeconds)) {
+                collectorService.saveMetricWithoutAnalysis(metric);
+                discoveryClient.updateStatus(RESOURCE_ID, "UP");
+                log.info("Cible {} en cours de démarrage depuis {}s — mesure conservée mais non analysée "
+                                + "(période de chauffe de {}s)",
+                        RESOURCE_NAME, String.format("%.0f", uptimeSeconds), warmupSeconds);
+                return;
+            }
+
             collectorService.saveMetric(metric);
             discoveryClient.updateStatus(RESOURCE_ID, "UP");
             log.debug("Métrique RÉELLE collectée pour {} — CPU={}%, mémoire={}%, disque={}%, latence={}ms",
@@ -93,6 +113,15 @@ public class RealTargetCollector {
             discoveryClient.updateStatus(RESOURCE_ID, "DOWN");
             log.warn("Cible réelle {} injoignable — marquée DOWN. Raison: {}", RESOURCE_NAME, e.getMessage());
         }
+    }
+
+    /**
+     * La cible vient-elle de démarrer ? Une valeur d'uptime nulle ou négative
+     * signifie qu'on n'a pas pu la lire : dans le doute on analyse la mesure,
+     * plutôt que de risquer d'ignorer une vraie panne.
+     */
+    static boolean isWarmingUp(double uptimeSeconds, int warmupSeconds) {
+        return uptimeSeconds > 0 && uptimeSeconds < warmupSeconds;
     }
 
     static double percentOf(double used, double max) {

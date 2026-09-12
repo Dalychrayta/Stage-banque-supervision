@@ -31,6 +31,23 @@ public class CollectorService {
         return saved;
     }
 
+    /**
+     * Enregistre la mesure sans la soumettre à l'analyse d'anomalie.
+     *
+     * Utilisé pendant la période de chauffe qui suit un redémarrage : une
+     * application qui démarre consomme presque tout le CPU pendant quelques
+     * secondes. C'est normal, ce n'est pas une panne — mais analysée comme
+     * telle, cette mesure déclenchait un redémarrage, donc une nouvelle
+     * période de chauffe, donc une nouvelle alerte, en boucle.
+     *
+     * La mesure est tout de même conservée : elle est vraie, et l'historique
+     * doit rester complet.
+     */
+    @Transactional
+    public MetricSnapshot saveMetricWithoutAnalysis(MetricSnapshot metric) {
+        return metricRepository.save(metric);
+    }
+
     @Transactional
     public LogEntry saveLog(LogEntry logEntry) {
         return logRepository.save(logEntry);

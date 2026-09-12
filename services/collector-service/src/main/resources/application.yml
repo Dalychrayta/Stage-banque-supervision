@@ -24,9 +24,20 @@ spring:
     consumer:
       group-id: collector-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      # ErrorHandlingDeserializer enveloppe le lecteur JSON : un message
+      # illisible est signale et ECARTE, au lieu de bloquer le consommateur.
+      # Sans lui, un seul message malforme arretait definitivement ce service —
+      # il le relisait, echouait, recommencait, en silence. Constate en vrai.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "*"
+        # On n'exige plus l'en-tete de type ajoute par un producteur Spring :
+        # tout message JSON est lu comme une Map, ce qu'attend deja le code.
+        # La plateforme accepte donc n'importe quel producteur, pas seulement
+        # un service Spring.
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: java.util.HashMap
 
 eureka:
   client:
@@ -71,3 +82,12 @@ collector:
     interval-ms: 30000
   logs:
     interval-ms: 60000
+
+# Cible réelle surveillée (srv-002).
+# warmup-seconds : durée après un démarrage pendant laquelle les mesures sont
+# conservées mais PAS analysées. Une JVM qui démarre consomme presque tout le
+# CPU pendant quelques secondes ; prise pour une panne, elle déclenchait un
+# redémarrage, donc un nouveau démarrage, donc une nouvelle alerte — en boucle.
+real-target:
+  actuator-url: ${REAL_TARGET_ACTUATOR_URL:http://localhost:8085/actuator}
+  warmup-seconds: ${REAL_TARGET_WARMUP_SECONDS:120}

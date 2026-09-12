@@ -11,9 +11,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,6 +126,82 @@ class HealingServiceTest {
         assertThat(result.getIsAutomatic()).isFalse();
         assertThat(result.getActionType()).isEqualTo(ActionType.CLEAR_CACHE);
         verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    // --- Délai de garde : empêcher la plateforme d'entretenir le problème ---
+    //
+    // Cas réellement observé : un redémarrage fait démarrer la JVM, qui consomme
+    // ~95 % de CPU quelques secondes ; le collecteur mesure ce pic, le modèle y
+    // voit une saturation, le RCA diagnostique CPU_SATURATION, la remédiation
+    // redémarre — et la boucle recommence. Six redémarrages réels en 25 minutes.
+
+    private void lastExecutedAction(String resourceId, ActionType type, LocalDateTime when) {
+        when(repository.findFirstByResourceIdAndActionTypeAndStatusNotOrderByTriggeredAtDesc(
+                resourceId, type, ActionStatus.SKIPPED))
+                .thenReturn(Optional.of(HealingAction.builder()
+                        .resourceId(resourceId).actionType(type).triggeredAt(when).build()));
+    }
+
+    @Test
+    void triggerHealing_shouldRefuseToRepeatTheSameActionWithinTheCooldown() {
+        lastExecutedAction("srv-001", ActionType.KILL_PROCESS, LocalDateTime.now().minusMinutes(2));
+
+        HealingAction result = healingService.triggerHealing(baseEvent("CPU_SATURATION", 50L));
+
+        assertThat(result.getStatus()).isEqualTo(ActionStatus.SKIPPED);
+        assertThat(result.getResultMessage()).contains("délai de garde");
+        // Le point essentiel : la cible n'est PAS touchée.
+        verifyNoInteractions(realActionExecutor);
+        verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    @Test
+    void triggerHealing_shouldActAgainOnceTheCooldownHasElapsed() {
+        lastExecutedAction("srv-001", ActionType.KILL_PROCESS, LocalDateTime.now().minusMinutes(30));
+
+        HealingAction result = healingService.triggerHealing(baseEvent("CPU_SATURATION", 51L));
+
+        assertThat(result.getStatus()).isEqualTo(ActionStatus.SUCCESS);
+    }
+
+    @Test
+    void triggerHealing_shouldNotLetADifferentActionBeBlockedByTheCooldown() {
+        // Le délai de garde porte sur une action précise, pas sur la ressource
+        // entière : un disque plein doit pouvoir être traité même si un
+        // redémarrage vient d'avoir lieu.
+        lastExecutedAction("srv-001", ActionType.KILL_PROCESS, LocalDateTime.now().minusMinutes(1));
+
+        HealingAction result = healingService.triggerHealing(baseEvent("DISK_FULL", 52L));
+
+        assertThat(result.getActionType()).isEqualTo(ActionType.FREE_DISK_SPACE);
+        assertThat(result.getStatus()).isEqualTo(ActionStatus.SUCCESS);
+    }
+
+    @Test
+    void triggerManual_shouldNeverBeBlockedByTheCooldown() {
+        // Un humain qui déclenche une action, justification écrite à l'appui,
+        // sait ce qu'il fait. Le garde-fou protège de la boucle machine, il ne
+        // bride pas le jugement d'un opérateur.
+        lastExecutedAction("srv-002", ActionType.RESTART_SERVICE, LocalDateTime.now().minusSeconds(30));
+
+        HealingAction result = healingService.triggerManual(
+                "srv-002", "auth-server-01", ActionType.RESTART_SERVICE,
+                "operator", "incident confirme par l'equipe reseau");
+
+        assertThat(result.getStatus()).isEqualTo(ActionStatus.SUCCESS);
+    }
+
+    @Test
+    void triggerHealing_shouldRecordTheRefusedActionInsteadOfStayingSilent() {
+        // Un auditeur doit voir que la plateforme a voulu agir et pourquoi elle
+        // s'en est abstenue.
+        lastExecutedAction("srv-001", ActionType.KILL_PROCESS, LocalDateTime.now().minusMinutes(3));
+
+        HealingAction result = healingService.triggerHealing(baseEvent("CPU_SATURATION", 53L));
+
+        assertThat(result.getTriggeredBy()).isEqualTo("systeme:auto-healing");
+        assertThat(result.getTriggerReason()).contains("CPU_SATURATION");
+        verify(repository, times(1)).save(any(HealingAction.class));
     }
 
     // --- Journal d'audit : qui a demandé l'action, et pourquoi ---

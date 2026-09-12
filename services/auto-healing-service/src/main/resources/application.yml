@@ -33,9 +33,20 @@ spring:
     consumer:
       group-id: healing-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      # ErrorHandlingDeserializer enveloppe le lecteur JSON : un message
+      # illisible est signale et ECARTE, au lieu de bloquer le consommateur.
+      # Sans lui, un seul message malforme arretait definitivement ce service —
+      # il le relisait, echouait, recommencait, en silence. Constate en vrai.
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "*"
+        # On n'exige plus l'en-tete de type ajoute par un producteur Spring :
+        # tout message JSON est lu comme une Map, ce qu'attend deja le code.
+        # La plateforme accepte donc n'importe quel producteur, pas seulement
+        # un service Spring.
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: java.util.HashMap
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -76,6 +87,14 @@ rca:
 # TOUT ce que l'auto-remédiation a le droit de toucher : un seul conteneur
 # à redémarrer, un seul dossier où supprimer des logs, et l'âge minimum
 # d'une archive supprimable.
+# Garde-fou anti-battement : délai minimum avant de rejouer la MÊME action
+# automatique sur la MÊME ressource. Sans lui, un redémarrage provoque un pic
+# de CPU au démarrage de la JVM, que la plateforme interprète comme une
+# saturation, et qu'elle « soigne » par un nouveau redémarrage — en boucle.
+# Ne s'applique pas aux actions déclenchées par un humain.
+healing:
+  cooldown-minutes: ${HEALING_COOLDOWN_MINUTES:10}
+
 real-target:
   container: ${REAL_TARGET_CONTAINER:bct-platformeback}
   log-dir: ${REAL_TARGET_LOG_DIR:/target-logs}
