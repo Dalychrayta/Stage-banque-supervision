@@ -83,10 +83,20 @@ public class IncidentAnalysis {
     @Column(name = "RESOLVED_AT")
     private LocalDateTime resolvedAt;
 
+    /**
+     * Nombre de détections consécutives pour cette même ressource+cause,
+     * tant que l'incident reste ouvert. À 1 à la création ; incrémenté quand
+     * une nouvelle détection identique met à jour cet incident au lieu d'en
+     * créer un autre (voir RcaService.analyzeAnomaly).
+     */
+    @Column(name = "OCCURRENCE_COUNT")
+    private Integer occurrenceCount;
+
     @PrePersist
     protected void onCreate() {
         if (analyzedAt == null) analyzedAt = LocalDateTime.now();
         if (status == null) status = AnalysisStatus.OPEN;
+        if (occurrenceCount == null) occurrenceCount = 1;
     }
 
     /** Catégorie qui fait foi : la correction de l'opérateur si elle existe,

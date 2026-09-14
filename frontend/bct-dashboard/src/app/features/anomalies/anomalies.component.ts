@@ -75,7 +75,12 @@ import { interval, Subscription } from 'rxjs';
             </td>
             <td>{{ (i.confidenceScore * 100) | number:'1.0-0' }}%</td>
             <td><span [class]="'stat-dot stat-' + i.status?.toLowerCase()">{{ i.status }}</span></td>
-            <td>{{ i.analyzedAt | date:'dd/MM HH:mm' }}</td>
+            <td>{{ i.analyzedAt | date:'dd/MM HH:mm' }}
+              <span *ngIf="i.occurrenceCount && i.occurrenceCount > 1" class="occurrence-badge"
+                    title="Nombre de détections consécutives pour cette même condition, tant qu'elle reste ouverte">
+                vu {{ i.occurrenceCount }}×
+              </span>
+            </td>
             <td>
               <button pButton label="Résoudre" icon="pi pi-check" severity="success" size="small"
                       *ngIf="i.status === 'OPEN' && canOperate" (click)="resolve(i)"></button>
@@ -117,6 +122,7 @@ import { interval, Subscription } from 'rxjs';
     .cat-edit { padding: 0 .25rem !important; }
     .ro-hint { color: #a0aec0; font-size: .72rem; font-style: italic; }
     .corrected-by { color: #3182ce; font-size: .68rem; }
+    .occurrence-badge { display: block; color: #a0aec0; font-size: .68rem; margin-top: .15rem; }
     .cat-select { font-size: .75rem; padding: .15rem .3rem; border: 1px solid #cbd5e0; border-radius: 4px; font-family: monospace; }
     .stat-dot { font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: 8px; }
     .stat-open        { background: #fff5f5; color: #e53e3e; }

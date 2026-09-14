@@ -49,6 +49,37 @@ public class RcaService {
         // Analyse de la cause racine par corrélation des métriques
         RcaResult result = determineRootCause(anomalyEvent);
 
+        // Une condition qui persiste (ex. une dérive statistique qui ne se
+        // résorbe jamais toute seule) est détectée à nouveau à CHAQUE cycle de
+        // collecte (30 s) — sans ce garde-fou, elle ouvrait un nouvel incident
+        // à chaque fois : 91 lignes "DISK_FULL" identiques en une heure,
+        // observées en conditions réelles. On met à jour l'occurrence en
+        // cours au lieu d'en empiler une nouvelle. Ne republie PAS sur Kafka :
+        // auto-healing-service a déjà eu sa vraie tentative sur la première
+        // détection, et republier à chaque mise à jour ferait le même travail
+        // en double sur son propre journal (délai de garde -> SKIPPED en
+        // boucle). Le bouton "Action manuelle" reste le recours pour une
+        // nouvelle tentative si le délai de garde est passé.
+        var existingOpen = repository.findFirstByResourceIdAndCauseCategoryAndStatusOrderByDetectedAtDesc(
+                resourceId, result.category(), AnalysisStatus.OPEN);
+        if (existingOpen.isPresent()) {
+            IncidentAnalysis ongoing = existingOpen.get();
+            ongoing.setAnomalyScore(anomalyScore);
+            ongoing.setSeverity(severity);
+            ongoing.setAnomalousMetrics(anomalousMetrics);
+            ongoing.setRootCause(result.rootCause());
+            ongoing.setConfidenceScore(result.confidence());
+            ongoing.setRecommendation(result.recommendation());
+            ongoing.setSourceMetricId(sourceMetricId);
+            ongoing.setDetectedAt(LocalDateTime.now());
+            ongoing.setOccurrenceCount(
+                    (ongoing.getOccurrenceCount() == null ? 1 : ongoing.getOccurrenceCount()) + 1);
+            IncidentAnalysis updated = repository.save(ongoing);
+            log.info("Incident #{} mis à jour ({}e occurrence) pour {} — catégorie: {}",
+                    updated.getId(), updated.getOccurrenceCount(), resourceId, result.category());
+            return updated;
+        }
+
         IncidentAnalysis analysis = IncidentAnalysis.builder()
                 .resourceId(resourceId)
                 .resourceName(resourceName)

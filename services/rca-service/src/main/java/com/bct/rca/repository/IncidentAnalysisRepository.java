@@ -16,6 +16,14 @@ public interface IncidentAnalysisRepository extends JpaRepository<IncidentAnalys
 
     Optional<IncidentAnalysis> findBySourceMetricId(Long sourceMetricId);
 
+    /**
+     * Incident déjà ouvert pour cette ressource et cette cause, s'il en existe
+     * un. Sert à mettre à jour une occurrence en cours plutôt que d'en
+     * dupliquer une nouvelle ligne à chaque cycle de détection (30 s).
+     */
+    Optional<IncidentAnalysis> findFirstByResourceIdAndCauseCategoryAndStatusOrderByDetectedAtDesc(
+            String resourceId, String causeCategory, AnalysisStatus status);
+
     List<IncidentAnalysis> findByResourceIdOrderByAnalyzedAtDesc(String resourceId);
 
     List<IncidentAnalysis> findByStatusOrderByAnalyzedAtDesc(AnalysisStatus status);

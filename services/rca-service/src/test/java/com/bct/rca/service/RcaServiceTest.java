@@ -194,6 +194,82 @@ class RcaServiceTest {
         verify(rcaResultProducer, times(1)).sendRcaResult(result);
     }
 
+    // --- Dérive persistante : mettre à jour au lieu de dupliquer ---
+    //
+    // Constaté en conditions réelles : une dérive qui ne se résorbe jamais
+    // toute seule (disque légèrement hors de la plage apprise par le modèle)
+    // est re-détectée à CHAQUE cycle de collecte (30 s), sans jamais changer
+    // de cause ni de ressource — 91 incidents DISK_FULL identiques ouverts en
+    // une heure. Un incident déjà OUVERT pour la même ressource + même cause
+    // doit être mis à jour, pas dupliqué.
+
+    @Test
+    void analyzeAnomaly_shouldUpdateTheExistingOpenIncidentInsteadOfDuplicatingIt() {
+        IncidentAnalysis ongoing = IncidentAnalysis.builder()
+                .id(500L).resourceId("srv-002").causeCategory("DISK_FULL")
+                .status(AnalysisStatus.OPEN).occurrenceCount(1)
+                .anomalyScore(-0.5).build();
+        when(repository.findFirstByResourceIdAndCauseCategoryAndStatusOrderByDetectedAtDesc(
+                "srv-002", "DISK_FULL", AnalysisStatus.OPEN))
+                .thenReturn(java.util.Optional.of(ongoing));
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-002");
+        event.put("diskUsage", 95.0); // > 90 -> DISK_FULL, comme la 1ère fois
+        event.put("metricId", 42);
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        // Le même objet, pas une nouvelle instance créée par builder() : c'est
+        // la preuve d'une mise à jour en place, pas d'une ligne dupliquée.
+        assertThat(result).isSameAs(ongoing);
+        verify(repository, times(1)).save(ongoing);
+        assertThat(result.getOccurrenceCount()).isEqualTo(2);
+        // Aucune republication : la première détection a déjà donné sa vraie
+        // chance à auto-healing ; republier à chaque mise à jour ne ferait que
+        // réévaluer la même action en boucle contre son délai de garde
+        // (SKIPPED en boucle).
+        verify(rcaResultProducer, never()).sendRcaResult(any());
+    }
+
+    @Test
+    void analyzeAnomaly_shouldNotUpdateAResolvedIncidentButOpenANewOne() {
+        // Un incident déjà RESOLVED ne doit jamais être rouvert silencieusement
+        // par une réoccurrence : findFirst...Status(...OPEN) ne le trouvera pas,
+        // donc le chemin normal (nouvel incident) s'applique.
+        when(repository.findFirstByResourceIdAndCauseCategoryAndStatusOrderByDetectedAtDesc(
+                "srv-002", "DISK_FULL", AnalysisStatus.OPEN))
+                .thenReturn(java.util.Optional.empty());
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-002");
+        event.put("diskUsage", 95.0);
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        assertThat(result.getCauseCategory()).isEqualTo("DISK_FULL");
+        verify(rcaResultProducer, times(1)).sendRcaResult(result);
+    }
+
+    @Test
+    void analyzeAnomaly_shouldTreatADifferentCauseOnTheSameResourceAsASeparateIncident() {
+        // Une cause DIFFERENTE (ex. CPU_SATURATION) sur la même ressource ne
+        // doit pas être confondue avec un DISK_FULL déjà ouvert : la clé de
+        // déduplication est (ressource + cause), pas seulement la ressource.
+        when(repository.findFirstByResourceIdAndCauseCategoryAndStatusOrderByDetectedAtDesc(
+                "srv-002", "CPU_SATURATION", AnalysisStatus.OPEN))
+                .thenReturn(java.util.Optional.empty());
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("resourceId", "srv-002");
+        event.put("cpuUsage", 95.0);
+
+        IncidentAnalysis result = rcaService.analyzeAnomaly(event);
+
+        assertThat(result.getCauseCategory()).isEqualTo("CPU_SATURATION");
+        verify(rcaResultProducer, times(1)).sendRcaResult(result);
+    }
+
     @Test
     void analyzeAnomaly_shouldReuseExistingIncidentOnDuplicateMetricId() {
         IncidentAnalysis existing = IncidentAnalysis.builder().id(99L).sourceMetricId(555L).build();

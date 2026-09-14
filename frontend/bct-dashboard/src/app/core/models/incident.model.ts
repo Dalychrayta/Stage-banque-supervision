@@ -22,6 +22,8 @@ export interface IncidentAnalysis {
   detectedAt: string;
   analyzedAt: string;
   resolvedAt: string;
+  /** Nombre de détections consécutives pour cette même ressource+cause, tant que l'incident reste ouvert. */
+  occurrenceCount?: number;
 }
 
 export const CAUSE_CATEGORIES = [
