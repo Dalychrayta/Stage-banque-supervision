@@ -70,16 +70,31 @@ class TestRuleBasedPrediction:
         assert result.severity == "NORMAL"
         assert result.recommendation is None
 
-    def test_single_anomalous_metric_is_warning(self, service_without_model):
+    def test_a_single_absolute_threshold_breach_is_critical_not_warning(self, service_without_model):
+        # Sans modèle, chaque métrique nommée est forcément un seuil absolu
+        # franchi (pas de normale apprise = pas de déviation possible) : un
+        # CPU à 90% est déjà une vraie urgence, même seul. La classer WARNING
+        # aurait empêché tout redémarrage automatique réel (le garde-fou de
+        # gravité d'auto-healing-service refuse les actions destructives sur
+        # un WARNING) pour une machine effectivement en danger.
         result = service_without_model.predict(make_metric(cpu_usage=90.0))
         assert result.is_anomaly is True
-        assert result.severity == "WARNING"
+        assert result.severity == "CRITICAL"
         assert result.recommendation is not None
 
     def test_multiple_anomalous_metrics_is_critical(self, service_without_model):
         result = service_without_model.predict(make_metric(cpu_usage=95.0, memory_usage=95.0))
         assert result.is_anomaly is True
         assert result.severity == "CRITICAL"
+
+    def test_fallback_mode_never_produces_warning(self, service_without_model):
+        # Sans modèle il n'y a pas de normale apprise, donc pas de déviation
+        # possible — seuls des seuils absolus peuvent être franchis, et un
+        # seuil absolu franchi est toujours CRITICAL. WARNING n'existe qu'en
+        # mode modèle chargé (déviation sans dépassement absolu).
+        for kwargs in ({}, {"cpu_usage": 90.0}, {"cpu_usage": 95.0, "memory_usage": 95.0}):
+            result = service_without_model.predict(make_metric(**kwargs))
+            assert result.severity != "WARNING"
 
     def test_result_preserves_resource_identity(self, service_without_model):
         metric = make_metric(resource_id="srv-042", resource_name="payment-server")

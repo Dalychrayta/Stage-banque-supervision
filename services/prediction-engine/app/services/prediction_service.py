@@ -200,12 +200,18 @@ class PredictionService:
         )
 
     def _rule_based_prediction(self, metric: MetricInput) -> PredictionResult:
-        """Prédiction basée sur des règles simples (fallback sans modèle)."""
+        """Prédiction basée sur des règles simples (secours si le modèle est absent).
+
+        Doit rester alignée sur predict() : un seuil absolu franchi (CPU>85%...)
+        est CRITICAL, jamais seulement WARNING. Sans le modèle, il n'y a pas de
+        normale apprise donc pas de déviation possible — seuls les seuils
+        absolus s'appliquent ici, via _severity_for(anomalous, anomalous, False).
+        """
         anomalous_metrics = self._identify_anomalous_metrics(metric)
         is_anomaly = len(anomalous_metrics) > 0
 
         score = -0.5 if is_anomaly else 0.5
-        severity = "CRITICAL" if len(anomalous_metrics) >= 2 else ("WARNING" if is_anomaly else "NORMAL")
+        severity = self._severity_for(anomalous_metrics, anomalous_metrics, flagged_by_model=False)
 
         recommendation = self._generate_recommendation(metric, anomalous_metrics) if is_anomaly else None
 
