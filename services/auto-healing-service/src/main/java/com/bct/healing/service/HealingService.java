@@ -278,11 +278,16 @@ public class HealingService {
     }
 
     public Map<String, Long> getStats() {
+        // "total" compte TOUS les statuts (y compris SKIPPED, refusées par le
+        // délai de garde) : sans "skipped" en détail, total != success + failed
+        // + pending dès qu'une action a été refusée — exactement ce que le
+        // garde-fou anti-battement produit en fonctionnement normal.
         return Map.of(
                 "total", repository.count(),
                 "success", repository.countByStatus(ActionStatus.SUCCESS),
                 "failed", repository.countByStatus(ActionStatus.FAILED),
-                "pending", repository.countByStatus(ActionStatus.PENDING)
+                "pending", repository.countByStatus(ActionStatus.PENDING),
+                "skipped", repository.countByStatus(ActionStatus.SKIPPED)
         );
     }
 

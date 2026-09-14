@@ -322,18 +322,22 @@ class HealingServiceTest {
 
     @Test
     void getStats_shouldAggregateCountsFromRepository() {
+        // 13 + 2 + 3 + 2 = 20 : le total doit être explicable par ses parties,
+        // "skipped" (refusées par le délai de garde) inclus.
         when(repository.count()).thenReturn(20L);
-        when(repository.countByStatus(ActionStatus.SUCCESS)).thenReturn(15L);
+        when(repository.countByStatus(ActionStatus.SUCCESS)).thenReturn(13L);
         when(repository.countByStatus(ActionStatus.FAILED)).thenReturn(2L);
         when(repository.countByStatus(ActionStatus.PENDING)).thenReturn(3L);
+        when(repository.countByStatus(ActionStatus.SKIPPED)).thenReturn(2L);
 
         Map<String, Long> stats = healingService.getStats();
 
         assertThat(stats)
                 .containsEntry("total", 20L)
-                .containsEntry("success", 15L)
+                .containsEntry("success", 13L)
                 .containsEntry("failed", 2L)
-                .containsEntry("pending", 3L);
+                .containsEntry("pending", 3L)
+                .containsEntry("skipped", 2L);
     }
 
     private Map<String, Object> baseEvent(String causeCategory, Long incidentId) {

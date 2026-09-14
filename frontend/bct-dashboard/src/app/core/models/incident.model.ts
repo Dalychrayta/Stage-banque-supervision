@@ -53,6 +53,8 @@ export interface HealingStats {
   success: number;
   failed: number;
   pending: number;
+  /** Refusées par le délai de garde anti-battement (voir ActionStatus.SKIPPED côté serveur). */
+  skipped: number;
 }
 
 export interface RcaStats {

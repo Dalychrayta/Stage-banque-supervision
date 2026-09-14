@@ -27,6 +27,9 @@ import { Resource } from '../../core/models/resource.model';
         <div class="hstat success"><i class="pi pi-check-circle"></i><div><span>{{ stats.success }}</span><small>Succès</small></div></div>
         <div class="hstat failed"><i class="pi pi-times-circle"></i><div><span>{{ stats.failed }}</span><small>Échecs</small></div></div>
         <div class="hstat pending"><i class="pi pi-clock"></i><div><span>{{ stats.pending }}</span><small>En attente</small></div></div>
+        <div class="hstat skipped" title="Refusées par le délai de garde anti-battement">
+          <i class="pi pi-shield"></i><div><span>{{ stats.skipped }}</span><small>Ignorées</small></div>
+        </div>
         <div class="hstat total"><i class="pi pi-list"></i><div><span>{{ stats.total }}</span><small>Total</small></div></div>
         <button *ngIf="canOperate" pButton label="Action manuelle" icon="pi pi-play" class="p-button-outlined manual-btn" (click)="showManualDialog = true"></button>
       </div>
@@ -81,12 +84,13 @@ import { Resource } from '../../core/models/resource.model';
     .healing-stats { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
     .hstat { background: #fff; border-radius: 10px; padding: .75rem 1.25rem; display: flex; align-items: center; gap: .6rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
     .hstat i { font-size: 1.3rem; } .hstat span { font-size: 1.6rem; font-weight: 700; display: block; line-height: 1; } .hstat small { color: #718096; font-size: .75rem; }
-    .success i { color: #38a169; } .failed i { color: #e53e3e; } .pending i { color: #d69e2e; } .total i { color: #6c9bff; }
+    .success i { color: #38a169; } .failed i { color: #e53e3e; } .pending i { color: #d69e2e; } .total i { color: #6c9bff; } .skipped i { color: #805ad5; }
     .manual-btn { margin-left: auto; }
     .action-tag { background: #edf2f7; color: #2d3748; padding: .2rem .5rem; border-radius: 6px; font-size: .72rem; font-family: monospace; }
     .ast { font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: 8px; }
     .ast-success { background: #f0fff4; color: #38a169; } .ast-failed { background: #fff5f5; color: #e53e3e; }
     .ast-pending { background: #fffbeb; color: #d69e2e; } .ast-in_progress { background: #ebf8ff; color: #3182ce; }
+    .ast-skipped { background: #faf5ff; color: #805ad5; }
     .auto-badge   { background: #ebf8ff; color: #3182ce; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; }
     .manual-badge { background: #faf5ff; color: #6b46c1; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; }
     .desc-cell, .result-cell { font-size: .8rem; color: #4a5568; max-width: 200px; }
@@ -140,7 +144,7 @@ export class HealingComponent implements OnInit {
   }
 
   getIcon(status: string): string {
-    const m: Record<string,string> = { SUCCESS:'pi pi-check', FAILED:'pi pi-times', PENDING:'pi pi-clock', IN_PROGRESS:'pi pi-spin pi-spinner' };
+    const m: Record<string,string> = { SUCCESS:'pi pi-check', FAILED:'pi pi-times', PENDING:'pi pi-clock', IN_PROGRESS:'pi pi-spin pi-spinner', SKIPPED:'pi pi-shield' };
     return m[status] ?? 'pi pi-circle';
   }
 
