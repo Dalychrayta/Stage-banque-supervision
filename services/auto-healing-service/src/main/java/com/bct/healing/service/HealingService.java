@@ -14,9 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -158,7 +160,49 @@ public class HealingService {
         return incidentId == null ? base : base + ", incident #" + incidentId;
     }
 
+    /** Actions qui interrompent le service : réservées aux incidents CRITICAL. */
+    private static final Set<ActionType> ACTIONS_DESTRUCTIVES =
+            EnumSet.of(ActionType.RESTART_SERVICE, ActionType.KILL_PROCESS);
+
+    /**
+     * Règle appliquée pour une cause donnée, PUIS filtrée par la gravité.
+     *
+     * La gravité était calculée mais jamais consultée : la cause seule décidait.
+     * Tant que le diagnostic ne reposait que sur des seuils absolus (CPU > 90 %),
+     * ça passait — toute cause diagnostiquée était déjà une catastrophe. Depuis
+     * que le moteur détecte aussi les écarts par rapport à la normale apprise,
+     * une machine saine à 73 % de CPU produit un diagnostic CPU_SATURATION — et
+     * déclenchait un redémarrage de production.
+     *
+     * Détecter plus finement impose donc d'agir plus prudemment : une détection
+     * plus sensible sans politique d'action correspondante transforme une bonne
+     * alerte en mauvaise décision.
+     */
     private HealingRule selectRule(String causeCategory, String severity) {
+        HealingRule regle = ruleForCause(causeCategory);
+        return applySeverityGuard(regle, severity);
+    }
+
+    /**
+     * Un WARNING signale une dérive à surveiller, pas une machine en danger :
+     * il ne peut pas justifier une action qui interrompt le service. On prévient
+     * l'équipe à la place, et l'incident reste ouvert pour décision humaine.
+     */
+    static HealingRule applySeverityGuard(HealingRule regle, String severity) {
+        if (!ACTIONS_DESTRUCTIVES.contains(regle.actionType())) {
+            return regle;
+        }
+        if ("CRITICAL".equalsIgnoreCase(severity)) {
+            return regle;
+        }
+        return new HealingRule(
+                ActionType.NOTIFY_TEAM,
+                "Dérive détectée (" + severity + ") — action interruptive réservée aux incidents critiques, "
+                        + "équipe notifiée à la place",
+                false);
+    }
+
+    private HealingRule ruleForCause(String causeCategory) {
         return switch (causeCategory) {
             case "MEMORY_EXHAUSTION" -> new HealingRule(
                     ActionType.RESTART_SERVICE,

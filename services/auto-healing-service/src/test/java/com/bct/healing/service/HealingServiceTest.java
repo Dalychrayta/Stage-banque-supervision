@@ -128,6 +128,61 @@ class HealingServiceTest {
         verify(rcaServiceClient, never()).resolveIncident(any());
     }
 
+    // --- La gravité commande l'action ---
+    //
+    // Défaut constaté en production : la gravité était calculée mais jamais
+    // consultée, la cause seule décidait. Tant que le diagnostic ne reposait que
+    // sur des seuils absolus (CPU > 90 %), ça tenait. Depuis que le moteur voit
+    // aussi les écarts à la normale apprise, une machine saine à 73 % de CPU
+    // produit un diagnostic CPU_SATURATION — et déclenchait un redémarrage de
+    // production. Trois fois en 26 minutes, sur un serveur qui n'avait rien.
+
+    private Map<String, Object> event(String cause, String severity, long incidentId) {
+        Map<String, Object> e = baseEvent(cause, incidentId);
+        e.put("severity", severity);
+        return e;
+    }
+
+    @Test
+    void aWarningMustNeverRestartAProductionServer() {
+        HealingAction result = healingService.triggerHealing(event("CPU_SATURATION", "WARNING", 60L));
+
+        assertThat(result.getActionType()).isEqualTo(ActionType.NOTIFY_TEAM);
+        // Le point qui compte : rien n'est redémarré ni tué sur la cible.
+        verify(realActionExecutor, never()).restartRealService();
+        verify(realActionExecutor, never()).freeRealDiskSpace();
+        // L'incident reste ouvert : un humain doit décider.
+        verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    @Test
+    void aCriticalIncidentMayRestart() {
+        HealingAction result = healingService.triggerHealing(event("CPU_SATURATION", "CRITICAL", 61L));
+
+        assertThat(result.getActionType()).isEqualTo(ActionType.KILL_PROCESS);
+    }
+
+    @Test
+    void aWarningStillAllowsActionsThatDoNotInterruptTheService() {
+        // Vider un cache ou supprimer de vieux logs n'interrompt personne :
+        // le garde-fou ne porte que sur les actions destructives.
+        assertThat(healingService.triggerHealing(event("HIGH_LATENCY", "WARNING", 62L)).getActionType())
+                .isEqualTo(ActionType.CLEAR_CACHE);
+        assertThat(healingService.triggerHealing(event("DISK_FULL", "WARNING", 63L)).getActionType())
+                .isEqualTo(ActionType.FREE_DISK_SPACE);
+    }
+
+    @Test
+    void severityGuard_shouldTreatAnUnknownOrMissingSeverityAsNonCritical() {
+        // En l'absence d'information, on ne détruit pas.
+        assertThat(HealingService.applySeverityGuard(
+                new HealingService.HealingRule(ActionType.RESTART_SERVICE, "test", true), null).actionType())
+                .isEqualTo(ActionType.NOTIFY_TEAM);
+        assertThat(HealingService.applySeverityGuard(
+                new HealingService.HealingRule(ActionType.RESTART_SERVICE, "test", true), "INFO").actionType())
+                .isEqualTo(ActionType.NOTIFY_TEAM);
+    }
+
     // --- Délai de garde : empêcher la plateforme d'entretenir le problème ---
     //
     // Cas réellement observé : un redémarrage fait démarrer la JVM, qui consomme

@@ -90,4 +90,7 @@ collector:
 # redémarrage, donc un nouveau démarrage, donc une nouvelle alerte — en boucle.
 real-target:
   actuator-url: ${REAL_TARGET_ACTUATOR_URL:http://localhost:8085/actuator}
-  warmup-seconds: ${REAL_TARGET_WARMUP_SECONDS:120}
+  # 300 s et non 120 : mesuré en vrai, une JVM Spring Boot reste chaude bien
+  # au-delà de deux minutes (compilation à la volée), et la mesure qui suivait
+  # la fin de la fenêtre relançait la boucle avec un CPU encore à 73 %.
+  warmup-seconds: ${REAL_TARGET_WARMUP_SECONDS:300}
