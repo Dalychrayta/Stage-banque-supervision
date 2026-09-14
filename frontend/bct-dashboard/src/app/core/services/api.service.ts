@@ -74,8 +74,13 @@ export class ApiService {
     return this.http.patch<IncidentAnalysis>(`${API_BASE}/rca/${id}/resolve`, {});
   }
 
-  correctIncidentCategory(id: number, category: string, correctedBy: string): Observable<IncidentAnalysis> {
-    return this.http.patch<IncidentAnalysis>(`${API_BASE}/rca/${id}/category`, { category, correctedBy });
+  /**
+   * L'auteur de la correction n'est volontairement pas envoyé : rca-service le
+   * lit dans le jeton Keycloak qu'il vérifie lui-même. Envoyer un nom depuis
+   * le client rendrait le journal d'audit falsifiable.
+   */
+  correctIncidentCategory(id: number, category: string): Observable<IncidentAnalysis> {
+    return this.http.patch<IncidentAnalysis>(`${API_BASE}/rca/${id}/category`, { category });
   }
 
   getRcaStats(): Observable<RcaStats> {

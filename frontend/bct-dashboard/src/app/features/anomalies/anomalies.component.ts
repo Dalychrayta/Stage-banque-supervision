@@ -195,8 +195,7 @@ export class AnomaliesComponent implements OnInit, OnDestroy {
       this.editingCategoryId = null;
       return;
     }
-    const by = this.auth.getUsername() ?? 'inconnu';
-    this.api.correctIncidentCategory(i.id, this.editCategoryValue, by).subscribe({
+    this.api.correctIncidentCategory(i.id, this.editCategoryValue).subscribe({
       next: updated => {
         i.correctedCategory = updated.correctedCategory;
         i.correctedBy = updated.correctedBy;

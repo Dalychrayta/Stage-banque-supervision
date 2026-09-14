@@ -16,6 +16,18 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.OracleDialect
+  # Vérification des jetons Keycloak par ce service lui-même.
+  # issuer-uri : l'adresse telle que le NAVIGATEUR la connaît, celle inscrite
+  # dans le jeton — c'est elle qui doit correspondre, sinon le jeton est rejeté.
+  # jwk-set-uri : l'adresse par laquelle CE CONTENEUR joint Keycloak pour
+  # récupérer les clés de signature. Les deux diffèrent en local, et se
+  # confondent en production derrière un vrai nom de domaine.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/bct}
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/bct/protocol/openid-connect/certs}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:

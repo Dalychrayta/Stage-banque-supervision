@@ -236,6 +236,12 @@ services:
       # pas Loki mais le conteneur lui-meme : aucun log n'arrivait.
       LOKI_URL: http://loki:3100
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      # Ce service vérifie les jetons lui-même (endpoints d'écriture protégés,
+      # port 8083 directement joignable). Mêmes deux adresses qu'ailleurs :
+      # ISSUER = vue navigateur (celle inscrite dans le jeton), JWKS = réseau
+      # interne Docker (où ce conteneur va chercher les clés de signature).
+      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}/realms/bct
+      KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/bct/protocol/openid-connect/certs
       JAVA_TOOL_OPTIONS: "-Xmx250m"
     mem_limit: 400m
     ports:
@@ -263,6 +269,22 @@ services:
       # Ce service vérifie les jetons lui-même (journal d'audit non falsifiable).
       KEYCLOAK_ISSUER_URI: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}/realms/bct
       KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/bct/protocol/openid-connect/certs
+      # Identité machine pour appeler rca-service (qui vérifie lui aussi ses
+      # jetons désormais) : auto-healing-service referme automatiquement un
+      # incident après une action réussie, sans utilisateur derrière l'appel.
+      # Secret de développement, identique à celui du client "bct-auto-healing"
+      # dans keycloak/realm-bct.json — il y est en dur (comme les mots de passe
+      # des comptes de démo) car l'import de realm ne substitue pas de variable
+      # d'environnement ; les deux valeurs doivent donc rester synchronisées.
+      KEYCLOAK_TOKEN_URI: http://keycloak:8180/realms/bct/protocol/openid-connect/token
+      AUTO_HEALING_CLIENT_SECRET: 3nZ4buy8BkBafQDelfPkF5Pp
+      # Oubli préexistant, sans rapport avec la sécurisation ci-dessus : cette
+      # variable n'a jamais été définie ici. Le repli par défaut pointait vers
+      # localhost:8083, qui depuis CE conteneur ne désigne pas rca-service mais
+      # lui-même — la résolution automatique d'incident échouait donc en
+      # silence (try/catch + simple avertissement dans les logs) depuis la
+      # conteneurisation, jamais vérifiée en base jusqu'à ce diagnostic.
+      RCA_SERVICE_URL: http://rca-service:8083
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       # Cible réelle : le SEUL conteneur que ce service a le droit de
       # redémarrer, et le SEUL dossier où il a le droit de supprimer.

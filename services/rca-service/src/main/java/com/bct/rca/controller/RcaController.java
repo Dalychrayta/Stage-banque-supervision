@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,13 +47,20 @@ public class RcaController {
         return ResponseEntity.ok(rcaService.resolve(id));
     }
 
-    /** Corriger manuellement la catégorie de cause d'un incident.
-     *  Body : { "category": "MEMORY_EXHAUSTION", "correctedBy": "admin" } */
+    /**
+     * Corriger manuellement la catégorie de cause d'un incident.
+     * Body : { "category": "MEMORY_EXHAUSTION" }
+     *
+     * L'auteur n'est PAS pris dans le corps de la requête : il est lu dans le
+     * jeton Keycloak que ce service a lui-même vérifié. Un client ne peut donc
+     * pas écrire le nom de son choix dans ce qui devient un journal d'audit.
+     */
     @PatchMapping("/{id}/category")
     public ResponseEntity<IncidentAnalysis> correctCategory(
-            @PathVariable Long id, @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(
-                rcaService.correctCategory(id, body.get("category"), body.get("correctedBy")));
+            @PathVariable Long id, @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal Jwt jwt) {
+        String correctedBy = jwt.getClaimAsString("preferred_username");
+        return ResponseEntity.ok(rcaService.correctCategory(id, body.get("category"), correctedBy));
     }
 
     @GetMapping("/stats")

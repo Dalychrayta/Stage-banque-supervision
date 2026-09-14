@@ -83,6 +83,14 @@ rca:
   service:
     url: ${RCA_SERVICE_URL:http://localhost:8083}
 
+# Identité machine utilisée pour appeler rca-service (celui-ci vérifie
+# désormais ses propres jetons). token-uri pointe le réseau interne Docker,
+# comme jwk-set-uri ailleurs — jamais l'adresse navigateur.
+keycloak:
+  token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/bct/protocol/openid-connect/token}
+  client-id: ${AUTO_HEALING_CLIENT_ID:bct-auto-healing}
+  client-secret: ${AUTO_HEALING_CLIENT_SECRET:}
+
 # Cible réelle (srv-002 = PlatformeBack). Ces trois valeurs délimitent
 # TOUT ce que l'auto-remédiation a le droit de toucher : un seul conteneur
 # à redémarrer, un seul dossier où supprimer des logs, et l'âge minimum

@@ -29,9 +29,27 @@
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:4200/*"
       }
+    },
+    {
+      "clientId": "bct-auto-healing",
+      "name": "BCT Supervision - auto-healing-service (compte de service)",
+      "description": "Identité machine, pas un compte humain : auto-healing-service l'utilise pour appeler rca-service (résoudre un incident) sans passer par un utilisateur. Mot de passe de développement, à changer pour tout usage réel — comme les comptes de démo ci-dessous.",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "3nZ4buy8BkBafQDelfPkF5Pp",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect"
     }
   ],
   "users": [
+    {
+      "username": "service-account-bct-auto-healing",
+      "enabled": true,
+      "serviceAccountClientId": "bct-auto-healing",
+      "realmRoles": ["OPERATOR"]
+    },
     {
       "username": "rh",
       "enabled": true,
