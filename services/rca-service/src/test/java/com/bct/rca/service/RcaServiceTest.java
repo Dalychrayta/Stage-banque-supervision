@@ -136,6 +136,40 @@ class RcaServiceTest {
         assertThat(RcaService.firstFlaggedMetric(Map.of())).isNull();
     }
 
+    // --- Seuils alignés avec prediction-engine ---
+    //
+    // Ces seuils doivent rester identiques à _absolute_threshold_breaches dans
+    // prediction_service.py. Sans cet alignement, une urgence réelle (CPU à
+    // 87 %, déjà classée CRITICAL par le moteur) ne franchissait pas le seuil
+    // du RCA (>90), et retombait sur le chemin "déviation" à confiance 0.65
+    // au lieu du chemin "seuil direct" à confiance 0.90 — même catégorie,
+    // mais confiance sous-évaluée pour une chose déjà confirmée dangereuse.
+
+    @ParameterizedTest(name = "{1} a confiance elevee (seuil direct) pour {0}")
+    @MethodSource("boundaryScenarios")
+    void analyzeAnomaly_shouldUseHighConfidenceAtTheSameBoundaryAsPredictionEngine(
+            Map<String, Object> metrics, String expectedCategory) {
+        IncidentAnalysis result = rcaService.analyzeAnomaly(new HashMap<>(metrics));
+
+        assertThat(result.getCauseCategory()).isEqualTo(expectedCategory);
+        // >= 0.80 : chemin "seuil direct", pas le repli "déviation" (0.65).
+        assertThat(result.getConfidenceScore()).isGreaterThanOrEqualTo(0.80);
+    }
+
+    static Stream<Arguments> boundaryScenarios() {
+        return Stream.of(
+                // 87% : CRITICAL cote prediction-engine (>85), mais AURAIT ete
+                // sous le seuil RCA d'avant ce correctif (>90).
+                Arguments.of(Map.of("cpuUsage", 87.0), "CPU_SATURATION"),
+                // 2500ms : CRITICAL cote prediction-engine (>2000), mais AURAIT
+                // ete sous l'ancien seuil RCA (>3000).
+                Arguments.of(Map.of("responseTimeMs", 2500.0), "HIGH_LATENCY"),
+                // 7% : CRITICAL cote prediction-engine (>5), mais AURAIT ete
+                // sous l'ancien seuil RCA (>10).
+                Arguments.of(Map.of("errorRate", 7.0), "HIGH_ERROR_RATE")
+        );
+    }
+
     @Test
     void analyzeAnomaly_shouldPrioritizeCpuOverOtherCauses() {
         // Quand plusieurs seuils sont dépassés, CPU doit être détecté en premier (ordre des règles)

@@ -78,8 +78,17 @@ public class RcaService {
         Double responseTime = getDouble(event, "responseTimeMs");
         Double errorRate = getDouble(event, "errorRate");
 
-        // Règles de corrélation pour identifier la cause
-        if (cpu != null && cpu > 90) {
+        // Règles de corrélation pour identifier la cause.
+        //
+        // Ces seuils DOIVENT rester identiques à _absolute_threshold_breaches
+        // dans prediction-engine (app/services/prediction_service.py) : c'est
+        // ce moteur qui décide en premier ce qui est une menace absolue. Un
+        // désalignement ne change pas la catégorie retenue (le repli sur la
+        // déviation la retrouve quand même), mais dégrade la confiance
+        // affichée : un vrai dépassement de seuil finit classé via le chemin
+        // "déviation" (confiance 0.65) au lieu du chemin "seuil direct"
+        // (confiance 0.90), pour une urgence bien réelle.
+        if (cpu != null && cpu > 85) {
             return new RcaResult(
                     "CPU_SATURATION",
                     "Saturation CPU détectée (" + String.format("%.1f", cpu) + "%) — processus consommateurs excessifs.",
@@ -103,7 +112,7 @@ public class RcaService {
                     "Nettoyer les logs anciens et archiver les données. Augmenter l'espace disque."
             );
         }
-        if (responseTime != null && responseTime > 3000) {
+        if (responseTime != null && responseTime > 2000) {
             return new RcaResult(
                     "HIGH_LATENCY",
                     "Temps de réponse élevé (" + String.format("%.0f", responseTime) + "ms) — goulot d'étranglement probable.",
@@ -111,7 +120,7 @@ public class RcaService {
                     "Vérifier les requêtes SQL lentes et les dépendances réseau."
             );
         }
-        if (errorRate != null && errorRate > 10) {
+        if (errorRate != null && errorRate > 5) {
             return new RcaResult(
                     "HIGH_ERROR_RATE",
                     "Taux d'erreur élevé (" + String.format("%.1f", errorRate) + "%) — dysfonctionnement applicatif.",
