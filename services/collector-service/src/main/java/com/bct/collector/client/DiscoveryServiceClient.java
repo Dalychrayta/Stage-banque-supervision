@@ -8,8 +8,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.Map;
 
 /**
- * Client vers le Discovery Service pour enregistrer les ressources
- * simulées et refléter leur statut à partir des anomalies détectées.
+ * Client vers le Discovery Service pour enregistrer la cible réelle
+ * supervisée et refléter son statut à partir des anomalies détectées.
  */
 @Component
 @Slf4j
@@ -26,10 +26,24 @@ public class DiscoveryServiceClient {
     }
 
     public void register(String resourceId, String name, String type, boolean simulated) {
+        register(resourceId, name, type, simulated, Map.of());
+    }
+
+    /**
+     * @param extra Champs additionnels optionnels reconnus par
+     *              RegisterResourceRequest (host, ipAddress, port, environment,
+     *              description, tags) — fusionnés dans le corps de la requête.
+     */
+    public void register(String resourceId, String name, String type, boolean simulated, Map<String, Object> extra) {
         try {
+            Map<String, Object> body = new java.util.HashMap<>(extra);
+            body.put("resourceId", resourceId);
+            body.put("name", name);
+            body.put("type", type);
+            body.put("simulated", simulated);
             webClient.post()
                     .uri("/api/resources/register")
-                    .bodyValue(Map.of("resourceId", resourceId, "name", name, "type", type, "simulated", simulated))
+                    .bodyValue(body)
                     .retrieve()
                     .toBodilessEntity()
                     .block();

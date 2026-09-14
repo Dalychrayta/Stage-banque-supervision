@@ -57,7 +57,16 @@ public class RealTargetCollector {
 
     @EventListener(ApplicationReadyEvent.class)
     public void registerRealTarget() {
-        discoveryClient.register(RESOURCE_ID, RESOURCE_NAME, "SERVER", false);
+        // host = nom du service Docker : stable, toujours valide, contrairement
+        // à une IP interne resolue une fois qui deviendrait fausse au prochain
+        // redémarrage du conteneur sans jamais être rafraîchie. environment
+        // décrit honnêtement ce que c'est réellement (une cible de test, pas
+        // de la production).
+        discoveryClient.register(RESOURCE_ID, RESOURCE_NAME, "SERVER", false, Map.of(
+                "host", "platformeback",
+                "port", 8085,
+                "environment", "test"
+        ));
         log.info("Ressource réelle enregistrée auprès du Discovery Service : {}", RESOURCE_ID);
     }
 
