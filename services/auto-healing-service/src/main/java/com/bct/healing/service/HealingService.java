@@ -262,7 +262,6 @@ public class HealingService {
             case KILL_PROCESS -> "[SIMULÉ] Processus CPU-intensifs terminés sur " + action.getResourceName();
             case FREE_DISK_SPACE -> "[SIMULÉ] 2.3 GB libérés sur " + action.getResourceName();
             case CLEAR_CACHE -> "[SIMULÉ] Cache vidé sur " + action.getResourceName();
-            case SCALE_UP -> "[SIMULÉ] Instance supplémentaire démarrée pour " + action.getResourceName();
             case NOTIFY_TEAM -> "Notification envoyée à l'équipe technique pour " + action.getResourceName();
             default -> "Action enregistrée. Intervention manuelle requise.";
         };

@@ -1,5 +1,5 @@
 export type AnalysisStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'IGNORED';
-export type ActionType = 'RESTART_SERVICE' | 'CLEAR_CACHE' | 'SCALE_UP' | 'FREE_DISK_SPACE' | 'KILL_PROCESS' | 'NOTIFY_TEAM' | 'RECOMMEND_ONLY';
+export type ActionType = 'RESTART_SERVICE' | 'CLEAR_CACHE' | 'FREE_DISK_SPACE' | 'KILL_PROCESS' | 'NOTIFY_TEAM' | 'RECOMMEND_ONLY';
 export type ActionStatus = 'PENDING' | 'IN_PROGRESS' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
 
 export interface IncidentAnalysis {

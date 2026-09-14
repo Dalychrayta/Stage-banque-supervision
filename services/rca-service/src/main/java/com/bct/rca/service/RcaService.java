@@ -54,12 +54,17 @@ public class RcaService {
         // collecte (30 s) — sans ce garde-fou, elle ouvrait un nouvel incident
         // à chaque fois : 91 lignes "DISK_FULL" identiques en une heure,
         // observées en conditions réelles. On met à jour l'occurrence en
-        // cours au lieu d'en empiler une nouvelle. Ne republie PAS sur Kafka :
-        // auto-healing-service a déjà eu sa vraie tentative sur la première
-        // détection, et republier à chaque mise à jour ferait le même travail
-        // en double sur son propre journal (délai de garde -> SKIPPED en
-        // boucle). Le bouton "Action manuelle" reste le recours pour une
-        // nouvelle tentative si le délai de garde est passé.
+        // cours au lieu d'en empiler une nouvelle.
+        //
+        // Ne republie PAS sur Kafka, par choix délibéré et pas seulement pour
+        // éviter le bruit : une seule tentative automatique par incident, puis
+        // c'est à un humain de reprendre la main (Résoudre s'il constate que
+        // c'est réglé, Action manuelle pour forcer une nouvelle tentative).
+        // Un robot qui retenterait seul une action destructrice (redémarrage,
+        // arrêt de processus) toutes les 10 minutes sans supervision serait
+        // plus risqué qu'utile dans un contexte bancaire — l'automatisation
+        // gère la première réaction, l'humain reste dans la boucle pour tout
+        // ce qui ne se résout pas tout seul.
         var existingOpen = repository.findFirstByResourceIdAndCauseCategoryAndStatusOrderByDetectedAtDesc(
                 resourceId, result.category(), AnalysisStatus.OPEN);
         if (existingOpen.isPresent()) {
@@ -72,6 +77,13 @@ public class RcaService {
             ongoing.setRecommendation(result.recommendation());
             ongoing.setSourceMetricId(sourceMetricId);
             ongoing.setDetectedAt(LocalDateTime.now());
+            // analyzedAt aussi : c'est le champ que "incidents récents" (et le
+            // graphique Tendance 24h du dashboard) utilise pour juger si un
+            // incident est encore d'actualité. Sans ce rafraîchissement, un
+            // problème toujours actif mais détecté pour la 1ère fois il y a
+            // plus de 24h disparaîtrait purement et simplement de ces vues,
+            // alors qu'il continue de se produire en ce moment même.
+            ongoing.setAnalyzedAt(LocalDateTime.now());
             ongoing.setOccurrenceCount(
                     (ongoing.getOccurrenceCount() == null ? 1 : ongoing.getOccurrenceCount()) + 1);
             IncidentAnalysis updated = repository.save(ongoing);
