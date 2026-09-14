@@ -15,7 +15,13 @@ export interface Resource {
   lastSeen: string;
   createdAt: string;
   tags: string;
-  simulated: boolean;
+  /**
+   * Hérité de l'époque simulation (retirée du projet). Le backend l'envoie
+   * encore, mais depuis qu'il n'existe plus qu'une seule ressource — toujours
+   * réelle — cette information n'a plus de valeur à afficher : ce serait un
+   * badge qui dit toujours la même chose. Volontairement non utilisé côté UI.
+   */
+  simulated?: boolean;
 }
 
 export interface ResourceStats {
