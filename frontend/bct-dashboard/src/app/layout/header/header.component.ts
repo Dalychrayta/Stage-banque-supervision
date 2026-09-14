@@ -1,6 +1,7 @@
-import { Component, Input, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Input, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -80,18 +81,28 @@ import { AuthService } from '../../core/services/auth.service';
     .logout-btn:hover { background: #f7fafc; color: #e53e3e; }
   `]
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnDestroy {
   @Input() title = 'Dashboard';
   currentTime = new Date();
+  private clockSub?: Subscription;
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private auth: AuthService,
     private router: Router
   ) {
+    // Ce composant est réinstancié à chaque page (il vit dans le template de
+    // chaque page, pas dans la coquille persistante de l'app) : un setInterval
+    // brut, jamais arrêté, laissait un intervalle orphelin tourner pour
+    // toujours à chaque navigation. L'abonnement RxJS est arrêté dans
+    // ngOnDestroy, comme partout ailleurs dans l'app.
     if (isPlatformBrowser(this.platformId)) {
-      setInterval(() => this.currentTime = new Date(), 1000);
+      this.clockSub = interval(1000).subscribe(() => this.currentTime = new Date());
     }
+  }
+
+  ngOnDestroy(): void {
+    this.clockSub?.unsubscribe();
   }
 
   logout(): void {
