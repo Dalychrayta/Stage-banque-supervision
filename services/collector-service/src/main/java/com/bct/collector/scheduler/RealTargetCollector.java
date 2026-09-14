@@ -39,9 +39,17 @@ public class RealTargetCollector {
     @Value("${real-target.actuator-url:http://localhost:8085/actuator}")
     private String actuatorBaseUrl;
 
-    /** Durée après un démarrage pendant laquelle les mesures ne sont pas analysées. */
-    @Value("${real-target.warmup-seconds:120}")
-    private int warmupSeconds = 120;
+    /**
+     * Durée après un démarrage pendant laquelle les mesures ne sont pas
+     * analysées. 300 s et non 120 : mesuré en vrai, une JVM Spring Boot reste
+     * chaude bien au-delà de deux minutes (compilation à la volée), et une
+     * fenêtre trop courte relançait la boucle de redémarrage qu'elle devait
+     * empêcher. Ce repli n'est utilisé que si application.yml ne définit pas
+     * real-target.warmup-seconds — il doit donc rester identique à la valeur
+     * qui y est configurée.
+     */
+    @Value("${real-target.warmup-seconds:300}")
+    private int warmupSeconds = 300;
 
     private WebClient client() {
         return WebClient.create(actuatorBaseUrl);
