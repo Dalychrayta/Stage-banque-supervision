@@ -61,11 +61,11 @@ import { Resource } from '../../core/models/resource.model';
       <div class="manual-form">
         <label>Ressource</label>
         <p-dropdown [options]="resourceOptions" [(ngModel)]="selectedResource" [filter]="true" filterBy="label"
-                    placeholder="Choisir une ressource" styleClass="w-full" [appendTo]="'body'"
+                    placeholder="Choisir une ressource" styleClass="w-full"
                     emptyMessage="Aucune ressource trouvée"></p-dropdown>
         <label>Action</label>
         <p-dropdown [options]="actionTypeOptions" [(ngModel)]="manualActionType"
-                    placeholder="Choisir une action" styleClass="w-full" [appendTo]="'body'"></p-dropdown>
+                    placeholder="Choisir une action" styleClass="w-full"></p-dropdown>
         <label>Motif <span class="required">obligatoire</span></label>
         <textarea pInputTextarea [(ngModel)]="manualReason" rows="3"
                   placeholder="Pourquoi cette action ? Ex. : mémoire saturée signalée par l'équipe réseau"></textarea>
