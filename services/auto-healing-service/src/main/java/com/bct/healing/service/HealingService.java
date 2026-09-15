@@ -88,7 +88,7 @@ public class HealingService {
         HealingAction saved = repository.save(action);
 
         // Exécution de l'action
-        RealActionExecutor.ActionResult result = executeAction(saved, rule);
+        RealActionExecutor.ActionResult result = executeAction(saved, rule, severity);
         saved.setResultMessage(result.message());
         saved.setStatus(result.success() ? ActionStatus.SUCCESS : ActionStatus.FAILED);
         saved.setCompletedAt(LocalDateTime.now());
@@ -238,7 +238,7 @@ public class HealingService {
         };
     }
 
-    private RealActionExecutor.ActionResult executeAction(HealingAction action, HealingRule rule) {
+    private RealActionExecutor.ActionResult executeAction(HealingAction action, HealingRule rule, String severity) {
         // Cible réelle (srv-002 / PlatformeBack) : on exécute vraiment
         // l'action au lieu de la simuler.
         if (realActionExecutor.isRealTarget(action.getResourceId())) {
@@ -260,8 +260,16 @@ public class HealingService {
         // simulés ci-dessous, sa réussite dépend réellement du SMTP, donc son
         // statut ne peut pas être figé à "succès".
         if (rule.actionType() == ActionType.NOTIFY_TEAM) {
+            // Automatique : rule.description() est l'explication métier lisible
+            // ("Cause inconnue — notification recommandée"). Manuel : ce texte
+            // est générique ("Action manuelle déclenchée par X") et répète ce
+            // que le badge dit déjà — le motif tapé par l'opérateur porte la
+            // vraie raison, c'est lui qu'il faut montrer.
+            String detail = Boolean.TRUE.equals(action.getIsAutomatic())
+                    ? rule.description()
+                    : action.getTriggerReason();
             boolean sent = emailNotificationService.sendIncidentNotification(
-                    action.getResourceName(), action.getCauseCategory(), rule.description());
+                    action.getResourceName(), action.getCauseCategory(), detail, severity);
             String message = sent
                     ? "Email envoyé à l'équipe technique pour " + action.getResourceName()
                     : "Échec de l'envoi de l'email de notification — vérifier la configuration SMTP";
@@ -329,7 +337,9 @@ public class HealingService {
                 .triggeredAt(LocalDateTime.now())
                 .build();
         HealingAction saved = repository.save(action);
-        RealActionExecutor.ActionResult result = executeAction(saved, rule);
+        // Pas de sévérité : une action manuelle n'est pas issue d'une analyse
+        // RCA, c'est un humain qui a jugé qu'il fallait agir.
+        RealActionExecutor.ActionResult result = executeAction(saved, rule, null);
         saved.setResultMessage(result.message());
         saved.setStatus(result.success() ? ActionStatus.SUCCESS : ActionStatus.FAILED);
         saved.setCompletedAt(LocalDateTime.now());

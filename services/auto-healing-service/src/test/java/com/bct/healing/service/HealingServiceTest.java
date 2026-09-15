@@ -40,7 +40,7 @@ class HealingServiceTest {
         emailNotificationService = mock(EmailNotificationService.class);
         // Cas nominal pour tous les tests existants : le SMTP marche. Le cas
         // d'échec d'envoi a son propre test dédié plus bas.
-        when(emailNotificationService.sendIncidentNotification(any(), any(), any())).thenReturn(true);
+        when(emailNotificationService.sendIncidentNotification(any(), any(), any(), any())).thenReturn(true);
         healingService = new HealingService(repository, rcaServiceClient, realActionExecutor, emailNotificationService);
 
         // Simule le comportement de JPA : save() renvoie l'entité telle quelle
@@ -125,7 +125,7 @@ class HealingServiceTest {
 
     @Test
     void notifyTeam_shouldBeMarkedFailedWhenEmailSendFails() {
-        when(emailNotificationService.sendIncidentNotification(any(), any(), any())).thenReturn(false);
+        when(emailNotificationService.sendIncidentNotification(any(), any(), any(), any())).thenReturn(false);
         Map<String, Object> event = baseEvent("UNKNOWN", 44L);
 
         HealingAction result = healingService.triggerHealing(event);
