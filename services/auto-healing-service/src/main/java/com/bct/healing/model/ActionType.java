@@ -5,6 +5,5 @@ public enum ActionType {
     CLEAR_CACHE,
     FREE_DISK_SPACE,
     KILL_PROCESS,
-    NOTIFY_TEAM,
-    RECOMMEND_ONLY  // Quand l'action automatique n'est pas possible
+    NOTIFY_TEAM
 }
