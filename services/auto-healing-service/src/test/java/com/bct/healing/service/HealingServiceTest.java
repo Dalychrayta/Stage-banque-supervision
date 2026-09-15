@@ -29,6 +29,7 @@ class HealingServiceTest {
     private HealingActionRepository repository;
     private RcaServiceClient rcaServiceClient;
     private RealActionExecutor realActionExecutor;
+    private EmailNotificationService emailNotificationService;
     private HealingService healingService;
 
     @BeforeEach
@@ -36,7 +37,11 @@ class HealingServiceTest {
         repository = mock(HealingActionRepository.class);
         rcaServiceClient = mock(RcaServiceClient.class);
         realActionExecutor = mock(RealActionExecutor.class);
-        healingService = new HealingService(repository, rcaServiceClient, realActionExecutor);
+        emailNotificationService = mock(EmailNotificationService.class);
+        // Cas nominal pour tous les tests existants : le SMTP marche. Le cas
+        // d'échec d'envoi a son propre test dédié plus bas.
+        when(emailNotificationService.sendIncidentNotification(any(), any(), any())).thenReturn(true);
+        healingService = new HealingService(repository, rcaServiceClient, realActionExecutor, emailNotificationService);
 
         // Simule le comportement de JPA : save() renvoie l'entité telle quelle
         when(repository.save(any(HealingAction.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -115,6 +120,18 @@ class HealingServiceTest {
 
         healingService.triggerHealing(event);
 
+        verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    @Test
+    void notifyTeam_shouldBeMarkedFailedWhenEmailSendFails() {
+        when(emailNotificationService.sendIncidentNotification(any(), any(), any())).thenReturn(false);
+        Map<String, Object> event = baseEvent("UNKNOWN", 44L);
+
+        HealingAction result = healingService.triggerHealing(event);
+
+        assertThat(result.getActionType()).isEqualTo(ActionType.NOTIFY_TEAM);
+        assertThat(result.getStatus()).isEqualTo(ActionStatus.FAILED);
         verify(rcaServiceClient, never()).resolveIncident(any());
     }
 

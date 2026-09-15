@@ -28,6 +28,17 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/bct}
           jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/bct/protocol/openid-connect/certs}
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
@@ -107,3 +118,8 @@ real-target:
   container: ${REAL_TARGET_CONTAINER:bct-platformeback}
   log-dir: ${REAL_TARGET_LOG_DIR:/target-logs}
   log-retention-days: ${REAL_TARGET_LOG_RETENTION_DAYS:7}
+
+# Destinataire de la vraie notification NOTIFY_TEAM.
+notification:
+  email:
+    to: ${NOTIFICATION_EMAIL_TO:}

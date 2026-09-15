@@ -28,6 +28,7 @@ public class HealingService {
     private final HealingActionRepository repository;
     private final RcaServiceClient rcaServiceClient;
     private final RealActionExecutor realActionExecutor;
+    private final EmailNotificationService emailNotificationService;
 
     /** Durée pendant laquelle la plateforme ne rejoue pas la même action sur la même ressource. */
     @Value("${healing.cooldown-minutes:10}")
@@ -255,6 +256,18 @@ public class HealingService {
             }
         }
 
+        // NOTIFY_TEAM envoie un vrai email : contrairement aux autres cas
+        // simulés ci-dessous, sa réussite dépend réellement du SMTP, donc son
+        // statut ne peut pas être figé à "succès".
+        if (rule.actionType() == ActionType.NOTIFY_TEAM) {
+            boolean sent = emailNotificationService.sendIncidentNotification(
+                    action.getResourceName(), action.getCauseCategory(), rule.description());
+            String message = sent
+                    ? "Email envoyé à l'équipe technique pour " + action.getResourceName()
+                    : "Échec de l'envoi de l'email de notification — vérifier la configuration SMTP";
+            return new RealActionExecutor.ActionResult(sent, message);
+        }
+
         // Dans l'environnement de démonstration, on simule l'exécution
         // En production, ici on appellerait les APIs de gestion d'infrastructure
         String message = switch (rule.actionType()) {
@@ -262,7 +275,6 @@ public class HealingService {
             case KILL_PROCESS -> "[SIMULÉ] Processus CPU-intensifs terminés sur " + action.getResourceName();
             case FREE_DISK_SPACE -> "[SIMULÉ] 2.3 GB libérés sur " + action.getResourceName();
             case CLEAR_CACHE -> "[SIMULÉ] Cache vidé sur " + action.getResourceName();
-            case NOTIFY_TEAM -> "Notification envoyée à l'équipe technique pour " + action.getResourceName();
             default -> "Action enregistrée. Intervention manuelle requise.";
         };
         return new RealActionExecutor.ActionResult(true, message);

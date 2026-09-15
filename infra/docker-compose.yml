@@ -290,6 +290,11 @@ services:
       # redémarrer, et le SEUL dossier où il a le droit de supprimer.
       REAL_TARGET_CONTAINER: bct-platformeback
       REAL_TARGET_LOG_DIR: /target-logs
+      # NOTIFY_TEAM envoie un vrai email via ce compte Gmail (mot de passe
+      # d'application, pas le vrai mot de passe du compte).
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO}
       JAVA_TOOL_OPTIONS: "-Xmx250m"
     volumes:
       # Socket Docker : permet de redémarrer le conteneur cible. Attention,
