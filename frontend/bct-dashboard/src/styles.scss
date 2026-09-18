@@ -31,6 +31,27 @@ body {
   box-shadow: none !important;
   border: 1px solid var(--border) !important;
 }
+.p-dialog {
+  background: var(--surface-raised) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-overlay) !important;
+}
+.p-dialog .p-dialog-header, .p-dialog .p-dialog-content, .p-dialog .p-dialog-footer {
+  background: var(--surface-raised) !important; color: var(--ink) !important;
+}
+.p-dialog .p-dialog-title { color: var(--ink-strong) !important; font-weight: 700; }
+.p-dialog .p-button.p-button-danger {
+  background: transparent !important; color: var(--status-down) !important;
+  border: 1px solid var(--status-down) !important; border-radius: var(--radius-pill) !important;
+  height: 44px; font-weight: 600;
+}
+.p-dialog .p-button.p-button-danger:disabled { opacity: .45; }
+.p-dialog .p-button.p-button-text { color: var(--ink) !important; border-radius: var(--radius-pill) !important; }
+.p-dropdown-panel { background: var(--surface-raised) !important; color: var(--ink) !important; border: 1px solid var(--border) !important; }
+.p-dropdown-panel .p-dropdown-item { color: var(--ink) !important; }
+.p-dropdown-panel .p-dropdown-item.p-highlight { background: var(--brand-tint) !important; color: var(--brand) !important; }
 .p-card .p-card-title { color: var(--ink-strong) !important; }
 .p-card .p-card-body { color: var(--ink) !important; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }

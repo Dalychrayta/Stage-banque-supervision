@@ -20,7 +20,7 @@ import { Resource } from '../../core/models/resource.model';
   imports: [CommonModule, FormsModule, TableModule, ButtonModule, DropdownModule, ToastModule, DialogModule, InputTextareaModule, HeaderComponent],
   providers: [MessageService],
   template: `
-    <app-header title="Auto-Healing Engine"></app-header>
+    <app-header title="Auto-réparation"></app-header>
     <p-toast></p-toast>
     <div class="page-content">
       <div class="healing-stats" *ngIf="stats">
@@ -31,27 +31,27 @@ import { Resource } from '../../core/models/resource.model';
           <i class="pi pi-shield"></i><div><span>{{ stats.skipped }}</span><small>Ignorées</small></div>
         </div>
         <div class="hstat total"><i class="pi pi-list"></i><div><span>{{ stats.total }}</span><small>Total</small></div></div>
-        <button *ngIf="canOperate" pButton label="Action manuelle" icon="pi pi-play" class="p-button-outlined manual-btn" (click)="showManualDialog = true"></button>
+        <button *ngIf="canOperate" pButton label="Action manuelle" icon="pi pi-play" class="manual-btn" (click)="showManualDialog = true"></button>
       </div>
 
       <p-table [value]="actions" [rows]="pageSize" [paginator]="true" [lazy]="true" [totalRecords]="totalRecords"
-               (onLazyLoad)="onPageChange($event)" styleClass="p-datatable-gridlines p-datatable-sm" [loading]="loading">
+               (onLazyLoad)="onPageChange($event)" styleClass="healing-table" [loading]="loading">
         <ng-template pTemplate="header">
           <tr><th>Ressource</th><th>Action</th><th>Cause</th><th>Demandé par</th><th>Motif</th><th>Statut</th><th>Type</th><th>Résultat</th><th>Date</th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-a>
           <tr>
-            <td><strong>{{ a.resourceName }}</strong></td>
+            <td><strong class="mono host-name">{{ a.resourceName }}</strong></td>
             <td><span class="action-tag">{{ a.actionType }}</span></td>
             <td>{{ a.causeCategory }}</td>
             <td><span [class]="isSystemActor(a.triggeredBy) ? 'actor-system' : 'actor-user'">
-                  <i [class]="isSystemActor(a.triggeredBy) ? 'pi pi-cog' : 'pi pi-user'"></i>
+                  <i [class]="isSystemActor(a.triggeredBy) ? 'pi pi-cog' : 'pi pi-user'" aria-hidden="true"></i>
                   {{ actorLabel(a.triggeredBy) }}</span></td>
             <td class="desc-cell">{{ a.triggerReason || a.description }}</td>
-            <td><span [class]="'ast ast-' + a.status?.toLowerCase()"><i [class]="getIcon(a.status)"></i> {{ a.status }}</span></td>
+            <td><span [class]="'ast ast-' + a.status?.toLowerCase()"><i [class]="getIcon(a.status)" aria-hidden="true"></i> {{ a.status }}</span></td>
             <td><span [class]="isSystemActor(a.triggeredBy) ? 'auto-badge' : 'manual-badge'">{{ isSystemActor(a.triggeredBy) ? 'Auto' : 'Manuel' }}</span></td>
             <td class="result-cell">{{ a.resultMessage }}</td>
-            <td>{{ a.triggeredAt | date:'dd/MM HH:mm' }}</td>
+            <td class="mono time-cell">{{ a.triggeredAt | date:'dd/MM HH:mm' }}</td>
           </tr>
         </ng-template>
       </p-table>
@@ -80,27 +80,43 @@ import { Resource } from '../../core/models/resource.model';
     </p-dialog>
   `,
   styles: [`
-    .page-content { padding: 1.5rem; }
-    .healing-stats { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .hstat { background: #fff; border-radius: 10px; padding: .75rem 1.25rem; display: flex; align-items: center; gap: .6rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-    .hstat i { font-size: 1.3rem; } .hstat span { font-size: 1.6rem; font-weight: 700; display: block; line-height: 1; } .hstat small { color: #718096; font-size: .75rem; }
-    .success i { color: #38a169; } .failed i { color: #e53e3e; } .pending i { color: #d69e2e; } .total i { color: #6c9bff; } .skipped i { color: #805ad5; }
-    .manual-btn { margin-left: auto; }
-    .action-tag { background: #edf2f7; color: #2d3748; padding: .2rem .5rem; border-radius: 6px; font-size: .72rem; font-family: monospace; }
-    .ast { font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: 8px; }
-    .ast-success { background: #f0fff4; color: #38a169; } .ast-failed { background: #fff5f5; color: #e53e3e; }
-    .ast-pending { background: #fffbeb; color: #d69e2e; } .ast-in_progress { background: #ebf8ff; color: #3182ce; }
-    .ast-skipped { background: #faf5ff; color: #805ad5; }
-    .auto-badge   { background: #ebf8ff; color: #3182ce; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; }
-    .manual-badge { background: #faf5ff; color: #6b46c1; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; }
-    .desc-cell, .result-cell { font-size: .8rem; color: #4a5568; max-width: 200px; }
+    .page-content { display: flex; flex-direction: column; gap: 16px; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .healing-stats { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .hstat { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+    .hstat i { font-size: 1.2rem; }
+    .hstat span { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.4rem; font-weight: 600; display: block; line-height: 1; color: var(--ink-strong); }
+    .hstat small { color: var(--ink-muted); font-size: .72rem; }
+    .success i { color: var(--status-up); } .failed i { color: var(--status-down); } .pending i { color: var(--status-warn); } .total i, .skipped i { color: var(--ink-muted); }
+    .manual-btn {
+      margin-left: auto; height: 44px; padding: 0 18px;
+      border-radius: var(--radius-pill) !important; border: 0 !important;
+      background: var(--brand) !important; color: var(--ink-inverse) !important;
+      font-size: 13px; font-weight: 600;
+    }
+    .host-name { color: var(--ink-strong); font-weight: 500; }
+    .time-cell { color: var(--ink-muted); font-size: 13px; }
+    .action-tag { background: var(--surface-sunken); color: var(--ink); padding: 3px 9px; border-radius: var(--radius-sm); font-size: .72rem; font-family: var(--font-mono); }
+    .ast { font-size: .72rem; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-pill); white-space: nowrap; }
+    .ast-success { background: var(--status-up-bg); color: var(--status-up); } .ast-failed { background: var(--status-down-bg); color: var(--status-down); }
+    .ast-pending { background: var(--status-warn-bg); color: var(--status-warn); } .ast-in_progress { background: var(--surface-sunken); color: var(--ink-muted); }
+    .ast-skipped { background: var(--surface-sunken); color: var(--ink-muted); }
+    .auto-badge   { background: var(--brand-tint); color: var(--brand); padding: 3px 10px; border-radius: var(--radius-pill); font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .manual-badge { background: var(--surface-sunken); color: var(--ink); padding: 3px 10px; border-radius: var(--radius-pill); font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+    .desc-cell, .result-cell { font-size: .8rem; color: var(--ink-muted); max-width: 200px; }
     .manual-form { display: flex; flex-direction: column; gap: .75rem; padding: .5rem 0; }
-    .manual-form label { font-weight: 600; font-size: .85rem; color: #2d3748; }
-    .manual-form textarea { width: 100%; font-family: inherit; font-size: .85rem; padding: .5rem; border: 1px solid #cbd5e0; border-radius: 6px; resize: vertical; }
-    .required { color: #e53e3e; font-weight: 500; font-size: .75rem; }
-    .reason-hint { color: #718096; font-size: .75rem; }
-    .actor-system { background: #edf2f7; color: #4a5568; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; white-space: nowrap; }
-    .actor-user   { background: #fffaf0; color: #b7791f; padding: .2rem .5rem; border-radius: 8px; font-size: .72rem; font-weight: 600; white-space: nowrap; }
+    .manual-form label { font-weight: 600; font-size: .85rem; color: var(--ink); }
+    .manual-form textarea { width: 100%; font-family: inherit; font-size: .85rem; padding: .5rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--ink); resize: vertical; }
+    .required { color: var(--status-down); font-weight: 500; font-size: .75rem; }
+    .reason-hint { color: var(--ink-muted); font-size: .75rem; }
+    .actor-system { background: var(--surface-sunken); color: var(--ink-muted); padding: 3px 10px; border-radius: var(--radius-pill); font-size: .72rem; font-weight: 600; white-space: nowrap; }
+    .actor-user   { background: var(--brand-tint); color: var(--brand); padding: 3px 10px; border-radius: var(--radius-pill); font-size: .72rem; font-weight: 600; white-space: nowrap; }
+
+    :host ::ng-deep .healing-table { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    :host ::ng-deep .healing-table .p-datatable-thead > tr > th { font-size: 11px !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+    :host ::ng-deep .healing-table .p-datatable-tbody > tr > td { font-size: 13px; }
+    :host ::ng-deep .healing-table .p-paginator { background: var(--surface-raised) !important; border-color: var(--hairline) !important; color: var(--ink-muted) !important; }
+    :host ::ng-deep .healing-table .p-paginator .p-highlight { background: var(--brand) !important; color: var(--ink-inverse) !important; }
   `]
 })
 export class HealingComponent implements OnInit {
