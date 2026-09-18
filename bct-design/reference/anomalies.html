@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anomalies et auto-réparation — Supervision BCT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; background: #f7f4ed; }
+a { color: #8a6d1f; text-decoration: none; }
+a:hover { color: #6b5314; }
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 20px; display: grid; grid-template-columns: 236px 1fr; gap: 20px; background: #f7f4ed; color: #3c382f;">
+
+  <nav style="background: #23201a; border-radius: 18px; padding: 22px 16px; display: flex; flex-direction: column; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 11px; padding: 0 6px 22px;">
+      <span style="width: 34px; height: 34px; border-radius: 11px; background: #8a6d1f; display: inline-flex; align-items: center; justify-content: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"></path></svg>
+      </span>
+      <span style="font-size: 15px; font-weight: 700; letter-spacing: -0.01em; color: #ebe5d7; white-space: nowrap;">Supervision</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <a href="Main.dc.html" style="display: flex; align-items: center; gap: 11px; height: 44px; padding: 0 14px; border-radius: 12px; color: #9c9482; font-size: 14px; font-weight: 500; white-space: nowrap;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="8.5" rx="2"></rect><rect x="13.5" y="3" width="7.5" height="5.5" rx="2"></rect><rect x="3" y="14.5" width="7.5" height="6.5" rx="2"></rect><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="2"></rect></svg>
+        Tableau de bord
+      </a>
+      <a href="Ressources.dc.html" style="display: flex; align-items: center; gap: 11px; height: 44px; padding: 0 14px; border-radius: 12px; color: #9c9482; font-size: 14px; font-weight: 500; white-space: nowrap;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="6" rx="2"></rect><rect x="3" y="13.5" width="18" height="6" rx="2"></rect></svg>
+        Ressources
+      </a>
+      <a href="Anomalies.dc.html" style="display: flex; align-items: center; gap: 11px; height: 44px; padding: 0 14px; border-radius: 12px; background: #ffffff; color: #8a6d1f; font-size: 14px; font-weight: 600; white-space: nowrap;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19L12 4Z"></path><path d="M12 10v4"></path><path d="M12 17.5v.5"></path></svg>
+        Anomalies
+        <span style="margin-left: auto; display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 999px; background: #9c1c2e; color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;">3</span>
+      </a>
+      <a href="Anomalies.dc.html" style="display: flex; align-items: center; gap: 11px; height: 44px; padding: 0 14px; border-radius: 12px; color: #9c9482; font-size: 14px; font-weight: 500; white-space: nowrap;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5a4 4 0 1 0 3 6.9L21 17l-2 2-3.6-3.5a4 4 0 0 1-6.9-3"></path><path d="M9 9 4 4"></path></svg>
+        Auto-réparation
+      </a>
+    </div>
+    <div style="margin-top: auto; padding: 16px; border-radius: 14px; background: #302b22;">
+      <span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9c9482;">Disponibilité 30 j</span>
+      <span style="display: block; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 600; color: #ffffff;">99,94 %</span>
+      <span style="display: block; margin-top: 10px; height: 5px; border-radius: 999px; background: #23201a; overflow: hidden;"><span style="display: block; width: 94%; height: 5px; border-radius: 999px; background: #3b6b46;"></span></span>
+      <span style="display: block; margin-top: 8px; font-size: 11px; color: #9c9482;">Cible 99,90 % — tenue</span>
+    </div>
+    <span style="padding: 16px 6px 0; font-size: 11px; line-height: 16px; color: #9c9482;">Banque Centrale de Tunisie</span>
+  </nav>
+
+  <div style="min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+
+    <header style="display: flex; align-items: center; gap: 16px; height: 64px; flex: none;">
+      <div style="min-width: 0;">
+        <span style="display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #6e685a;">Détection</span>
+        <h1 style="margin: 2px 0 0; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.02em; color: #1d1b16; white-space: nowrap;">Anomalies</h1>
+      </div>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+        <span style="display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: #ffffff; border: 1px solid #e2ddd1;">
+          <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: #f3efe4; color: #1d1b16; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">24 h</button>
+          <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: #6e685a; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">7 j</button>
+          <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: #6e685a; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">30 j</button>
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 16px; border-radius: 999px; background: #ffffff; border: 1px solid #e2ddd1; color: #3b6b46; font-size: 12px; font-weight: 600; white-space: nowrap;" title="Dernière collecte il y a 4 s">
+          <span style="width: 7px; height: 7px; border-radius: 999px; background: #3b6b46;"></span>En direct
+          <span style="font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; color: #6e685a; font-weight: 500;">19:09:43</span>
+        </span>
+        <span style="width: 44px; height: 44px; border-radius: 999px; background: #8a6d1f; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">BC</span>
+      </div>
+    </header>
+
+    <div style="flex-grow: 1; display: grid; grid-template-columns: 1fr 470px; gap: 16px; min-height: 0;">
+
+      <section style="background: #ffffff; border: 1px solid #e2ddd1; border-radius: 18px; padding: 20px 20px 0; box-sizing: border-box; display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 12px; height: 34px; flex: none;">
+          <h2 style="flex: none; margin: 0; font-size: 16px; line-height: 22px; font-weight: 700; letter-spacing: -0.01em; color: #1d1b16; white-space: nowrap;">Détections récentes</h2>
+          <span style="flex: none; font-size: 12px; color: #6e685a; white-space: nowrap;">7 sur 24 h · triées par score</span>
+          <a href="#" style="margin-left: auto; flex: none; font-size: 13px; font-weight: 600; white-space: nowrap;">Exporter</a>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; height: 74px; flex: none; border-top: 1px solid #efeae0; background: #fdfbf6;">
+          <span style="flex: none; width: 4px; height: 44px; border-radius: 999px; background: #9c1c2e;"></span>
+          <span style="flex-grow: 1; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1d1b16;">srv-tcp-02</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #fbe8ea; color: #9c1c2e; font-size: 11px; font-weight: 700; white-space: nowrap;"><span style="width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 8px solid #9c1c2e;"></span>Critique</span>
+            </span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: #1d1b16;">Sonde TCP 8443 sans réponse</span>
+          </span>
+          <span style="flex: none; text-align: right;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Score</span>
+            <span style="display: block; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: #1d1b16;">0,97</span>
+          </span>
+          <span style="flex: none; width: 66px; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #6e685a;">14:32:07</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; height: 74px; flex: none; border-top: 1px solid #efeae0;">
+          <span style="flex: none; width: 4px; height: 44px; border-radius: 999px; background: #9a4a10;"></span>
+          <span style="flex-grow: 1; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1d1b16;">srv-db-03</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #fbeade; color: #9a4a10; font-size: 11px; font-weight: 700; white-space: nowrap;"><span style="width: 7px; height: 7px; border-radius: 999px; box-shadow: inset 0 0 0 2px #9a4a10;"></span>Majeure</span>
+            </span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: #1d1b16;">Charge CPU à 87 % depuis 12 min</span>
+          </span>
+          <span style="flex: none; text-align: right;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Score</span>
+            <span style="display: block; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: #1d1b16;">0,88</span>
+          </span>
+          <span style="flex: none; width: 66px; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #6e685a;">14:18:40</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; height: 74px; flex: none; border-top: 1px solid #efeae0;">
+          <span style="flex: none; width: 4px; height: 44px; border-radius: 999px; background: #9a4a10;"></span>
+          <span style="flex-grow: 1; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1d1b16;">srv-db-03</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #fbeade; color: #9a4a10; font-size: 11px; font-weight: 700; white-space: nowrap;"><span style="width: 7px; height: 7px; border-radius: 999px; box-shadow: inset 0 0 0 2px #9a4a10;"></span>Majeure</span>
+            </span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: #1d1b16;">Retard de réplication à 3,2 s</span>
+          </span>
+          <span style="flex: none; text-align: right;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Score</span>
+            <span style="display: block; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: #1d1b16;">0,81</span>
+          </span>
+          <span style="flex: none; width: 66px; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #6e685a;">14:12:05</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; height: 74px; flex: none; border-top: 1px solid #efeae0;">
+          <span style="flex: none; width: 4px; height: 44px; border-radius: 999px; background: #cdc6b5;"></span>
+          <span style="flex-grow: 1; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1d1b16;">srv-mon-01</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f3efe4; color: #6e685a; font-size: 11px; font-weight: 700; white-space: nowrap;"><span style="width: 7px; height: 7px; border-radius: 999px; box-shadow: inset 0 0 0 1px #6e685a;"></span>Mineure</span>
+            </span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: #1d1b16;">Agent de collecte muet</span>
+          </span>
+          <span style="flex: none; text-align: right;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Score</span>
+            <span style="display: block; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: #1d1b16;">0,74</span>
+          </span>
+          <span style="flex: none; width: 66px; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #6e685a;">13:58:12</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; height: 74px; flex: none; border-top: 1px solid #efeae0;">
+          <span style="flex: none; width: 4px; height: 44px; border-radius: 999px; background: #cdc6b5;"></span>
+          <span style="flex-grow: 1; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1d1b16;">srv-app-02</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f3efe4; color: #6e685a; font-size: 11px; font-weight: 700; white-space: nowrap;"><span style="width: 7px; height: 7px; border-radius: 999px; box-shadow: inset 0 0 0 1px #6e685a;"></span>Mineure</span>
+            </span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: #1d1b16;">Latence à 180 ms en pointe</span>
+          </span>
+          <span style="flex: none; text-align: right;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Score</span>
+            <span style="display: block; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: #1d1b16;">0,62</span>
+          </span>
+          <span style="flex: none; width: 66px; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #6e685a;">11:04:22</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; height: 74px; flex: none; border-top: 1px solid #efeae0;">
+          <span style="flex: none; width: 4px; height: 44px; border-radius: 999px; background: #cdc6b5;"></span>
+          <span style="flex-grow: 1; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: #1d1b16;">srv-bat-02</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f3efe4; color: #6e685a; font-size: 11px; font-weight: 700; white-space: nowrap;"><span style="width: 7px; height: 7px; border-radius: 999px; box-shadow: inset 0 0 0 1px #6e685a;"></span>Mineure</span>
+            </span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: #1d1b16;">Traitement de nuit 14 min plus long</span>
+          </span>
+          <span style="flex: none; text-align: right;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Score</span>
+            <span style="display: block; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 600; color: #1d1b16;">0,58</span>
+          </span>
+          <span style="flex: none; width: 66px; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: #6e685a;">03:41:09</span>
+        </div>
+
+        <p style="margin: auto 0 0; padding: 14px 0 16px; border-top: 1px solid #efeae0; font-size: 12px; line-height: 17px; color: #6e685a;">Le score vient du modèle de détection. En dessous de 0,60, l'anomalie est signalée mais aucune action automatique n'est déclenchée.</p>
+      </section>
+
+      <section style="background: #ffffff; border: 1px solid #e2ddd1; border-radius: 18px; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; min-width: 0; overflow: hidden;">
+
+        <div style="flex: none;">
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; background: #fbe8ea; color: #9c1c2e; font-size: 12px; font-weight: 700; white-space: nowrap;"><span style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 9px solid #9c1c2e;"></span>Incident ouvert</span>
+          <h2 style="margin: 10px 0 0; font-size: 20px; line-height: 26px; font-weight: 700; letter-spacing: -0.02em; color: #1d1b16;">Passerelle télécompensation injoignable</h2>
+          <span style="display: block; margin-top: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6e685a;">INC-2026-0914 · srv-tcp-02 · prod</span>
+        </div>
+
+        <div style="flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+          <span style="padding: 12px; border-radius: 12px; background: #f3efe4;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Ouvert depuis</span>
+            <span style="display: block; margin-top: 3px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; color: #1d1b16;">22 min</span>
+          </span>
+          <span style="padding: 12px; border-radius: 12px; background: #f3efe4;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Tentatives</span>
+            <span style="display: block; margin-top: 3px; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; color: #1d1b16;">1 / 3</span>
+          </span>
+          <span style="padding: 12px; border-radius: 12px; background: #e9f0e8;">
+            <span style="display: block; font-size: 11px; color: #6e685a;">Service</span>
+            <span style="display: block; margin-top: 3px; font-size: 14px; font-weight: 700; color: #3b6b46;">Rendu</span>
+          </span>
+        </div>
+
+        <div style="flex-grow: 1; min-height: 0; overflow: hidden;">
+          <span style="display: block; margin-bottom: 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6e685a;">Journal des actions</span>
+          <ol style="margin: 0; padding: 0; list-style: none;">
+            <li style="position: relative; display: grid; grid-template-columns: 16px 60px 1fr; gap: 12px; align-items: start; padding-bottom: 16px;">
+              <span style="position: absolute; left: 7px; top: 17px; bottom: 0; width: 2px; background: #efeae0;"></span>
+              <span style="position: relative; z-index: 1; width: 16px; height: 16px; margin-top: 1px; border-radius: 999px; background: #ffffff; box-shadow: inset 0 0 0 5px #9a4a10;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 20px; color: #6e685a;">14:31:52</span>
+              <span>
+                <span style="display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d1b16;">Latence au-delà du seuil</span>
+                <span style="display: block; font-size: 13px; line-height: 18px; color: #6e685a;">248 ms sur 4 sondes — seuil 150 ms</span>
+              </span>
+            </li>
+            <li style="position: relative; display: grid; grid-template-columns: 16px 60px 1fr; gap: 12px; align-items: start; padding-bottom: 16px;">
+              <span style="position: absolute; left: 7px; top: 17px; bottom: 0; width: 2px; background: #efeae0;"></span>
+              <span style="position: relative; z-index: 1; width: 16px; height: 16px; margin-top: 1px; border-radius: 999px; background: #ffffff; box-shadow: inset 0 0 0 5px #9c1c2e;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 20px; color: #6e685a;">14:32:07</span>
+              <span>
+                <span style="display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d1b16;">Serveur injoignable</span>
+                <span style="display: block; font-size: 13px; line-height: 18px; color: #6e685a;">0 sonde sur 4 — incident ouvert</span>
+              </span>
+            </li>
+            <li style="position: relative; display: grid; grid-template-columns: 16px 60px 1fr; gap: 12px; align-items: start; padding-bottom: 16px;">
+              <span style="position: absolute; left: 7px; top: 17px; bottom: 0; width: 2px; background: #efeae0;"></span>
+              <span style="position: relative; z-index: 1; width: 16px; height: 16px; margin-top: 1px; border-radius: 999px; background: #ffffff; box-shadow: inset 0 0 0 5px #8a6d1f;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 20px; color: #6e685a;">14:32:09</span>
+              <span>
+                <span style="display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d1b16;">Relance de pacs-gateway <span style="display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: #f5edd8; color: #8a6d1f; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 2px;">auto</span></span>
+                <span style="display: block; font-size: 13px; line-height: 18px; color: #6e685a;">Tentative 1 sur 3 — échec après 8 s</span>
+                <pre style="margin: 8px 0 0; padding: 9px 11px; background: #f3efe4; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 16px; color: #3c382f; overflow-x: auto;">systemctl restart pacs-gateway
+Job failed — exit code 1</pre>
+              </span>
+            </li>
+            <li style="position: relative; display: grid; grid-template-columns: 16px 60px 1fr; gap: 12px; align-items: start; padding-bottom: 16px;">
+              <span style="position: absolute; left: 7px; top: 17px; bottom: 0; width: 2px; background: #efeae0;"></span>
+              <span style="position: relative; z-index: 1; width: 16px; height: 16px; margin-top: 1px; border-radius: 999px; background: #ffffff; box-shadow: inset 0 0 0 5px #8a6d1f;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 20px; color: #6e685a;">14:32:41</span>
+              <span>
+                <span style="display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d1b16;">Bascule vers srv-tcp-03 <span style="display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: #f5edd8; color: #8a6d1f; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 2px;">auto</span></span>
+                <span style="display: block; font-size: 13px; line-height: 18px; color: #6e685a;">Trafic dérouté en 11 s — redondance perdue</span>
+              </span>
+            </li>
+            <li style="position: relative; display: grid; grid-template-columns: 16px 60px 1fr; gap: 12px; align-items: start;">
+              <span style="position: relative; z-index: 1; width: 16px; height: 16px; margin-top: 1px; border-radius: 999px; background: #ffffff; box-shadow: inset 0 0 0 2px #cdc6b5;"></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 20px; color: #6e685a;">14:33:02</span>
+              <span>
+                <span style="display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d1b16;">Escalade à l'équipe infrastructure</span>
+                <span style="display: block; font-size: 13px; line-height: 18px; color: #6e685a;">Courriel et SMS envoyés — accusé attendu</span>
+              </span>
+            </li>
+          </ol>
+        </div>
+
+        <div style="flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" style="display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #8a6d1f; color: #ffffff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">Relancer le service</button>
+          <button type="button" style="display: inline-flex; align-items: center; height: 44px; padding: 0 16px; border: 1px solid #e2ddd1; border-radius: 999px; background: #ffffff; color: #3c382f; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">Journal complet</button>
+          <button type="button" style="display: inline-flex; align-items: center; height: 44px; padding: 0 16px; border: 1px solid #9c1c2e; border-radius: 999px; background: #ffffff; color: #9c1c2e; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">Revenir sur srv-tcp-02</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -18,17 +18,21 @@ import { SidebarComponent } from './layout/sidebar/sidebar.component';
   `,
   styles: [`
     .app-layout {
-      display: flex;
+      display: grid;
+      grid-template-columns: 236px 1fr;
+      gap: 20px;
+      padding: 20px;
       min-height: 100vh;
+      box-sizing: border-box;
+      background: var(--surface-canvas);
     }
     .main-content {
-      margin-left: 240px;
-      flex: 1;
-      background: #f7fafc;
-      min-height: 100vh;
+      min-width: 0;
     }
-    .app-layout.no-sidebar .main-content {
-      margin-left: 0;
+    .app-layout.no-sidebar {
+      grid-template-columns: 1fr;
+      padding: 0;
+      gap: 0;
     }
   `]
 })

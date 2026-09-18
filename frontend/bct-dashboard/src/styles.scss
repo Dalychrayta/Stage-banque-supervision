@@ -1,3 +1,4 @@
+@import "styles/tokens.css";
 @import "primeng/resources/themes/lara-light-blue/theme.css";
 @import "primeng/resources/primeng.css";
 @import "primeicons/primeicons.css";
@@ -6,24 +7,32 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  color: #2d3748;
-  background: #f7fafc;
+  color: var(--ink);
+  background: var(--surface-canvas);
 }
 
 .p-datatable .p-datatable-thead > tr > th {
-  background: #f7fafc;
-  color: #4a5568;
-  font-weight: 600;
-  font-size: 0.8rem;
+  background: var(--surface-raised) !important;
+  color: var(--ink-muted) !important;
+  font-weight: 700;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-color: #e2e8f0;
+  letter-spacing: 0.08em;
+  border-color: var(--hairline) !important;
 }
-.p-datatable .p-datatable-tbody > tr > td { border-color: #e2e8f0; padding: 0.6rem 0.75rem; }
-.p-datatable .p-datatable-tbody > tr:hover { background: #f0f4ff !important; }
-.p-card { border-radius: 12px !important; box-shadow: 0 2px 8px rgba(0,0,0,.06) !important; }
+.p-datatable .p-datatable-tbody > tr > td { background: var(--surface-raised) !important; color: var(--ink) !important; border-color: var(--hairline) !important; padding: 0.6rem 0.75rem; }
+.p-datatable .p-datatable-tbody > tr:hover { background: var(--surface-hover) !important; }
+.p-card {
+  background: var(--surface-raised) !important;
+  color: var(--ink) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--border) !important;
+}
+.p-card .p-card-title { color: var(--ink-strong) !important; }
+.p-card .p-card-body { color: var(--ink) !important; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f1f1f1; }
-::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--surface-sunken); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }

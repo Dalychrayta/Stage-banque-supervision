@@ -1,0 +1,130 @@
+/* Supervision BCT — jetons de design
+   À placer dans src/styles/tokens.css et importer EN PREMIER dans styles.scss.
+   La bascule de thème se fait par l'attribut data-theme sur <html>. */
+
+:root,
+[data-theme="clair"] {
+  /* Surfaces */
+  --surface-canvas: #f7f4ed;   /* fond de page, ivoire tiède */
+  --surface-raised: #ffffff;   /* cartes, panneaux, tableaux */
+  --surface-sunken: #f3efe4;   /* pistes de jauge, champs, blocs de journal */
+  --surface-hover:  #f6f2e9;
+  --hairline:       #efeae0;   /* séparateurs internes (lignes de tableau) */
+
+  /* Encre */
+  --ink-strong:  #1d1b16;      /* titres, valeurs chiffrées */
+  --ink:         #3c382f;      /* texte courant */
+  --ink-muted:   #6e685a;      /* libellés, unités, horodatages */
+  --ink-inverse: #ffffff;
+
+  /* Bordures */
+  --border:        #e2ddd1;    /* contour de carte */
+  --border-strong: #8c8474;    /* contrôle interactif */
+
+  /* Or */
+  --brand:        #8a6d1f;     /* or bronze : liens, bouton primaire, actif */
+  --brand-strong: #6b5314;
+  --brand-tint:   #f5edd8;     /* fond doré discret, pastille auto */
+  --accent:       #d4a72c;     /* or clair, GRAPHIQUE uniquement */
+
+  /* États de santé */
+  --status-up:      #3b6b46;   --status-up-bg:   #e9f0e8;
+  --status-warn:    #9a4a10;   --status-warn-bg: #fbeade;
+  --status-down:    #9c1c2e;   --status-down-bg: #fbe8ea;
+  --status-idle:    var(--ink-muted);
+  --status-idle-bg: var(--surface-sunken);
+  --neutral-bar:    #cdc6b5;   /* barres et traits sans gravité */
+
+  /* Métriques */
+  --metric-line: #a8842a;
+  --metric-area: #f3ead3;
+  --focus-ring:  #8a6d1f;
+
+  /* Rail de navigation — sombre dans les deux thèmes */
+  --nav-surface:    #23201a;
+  --nav-inner:      #302b22;
+  --nav-ink:        #ebe5d7;
+  --nav-ink-muted:  #9c9482;
+  --nav-active-bg:  #ffffff;
+  --nav-active-ink: #8a6d1f;
+
+  /* Typographie */
+  --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  /* Espacement */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 32px; --space-7: 48px;
+
+  /* Rayons — la version moderne est franchement arrondie */
+  --radius-sm:   10px;  /* petites tuiles, blocs de journal */
+  --radius-md:   14px;  /* champs, entrées de navigation */
+  --radius-lg:   18px;  /* panneaux et cartes */
+  --radius-xl:   24px;  /* grandes cartes : connexion */
+  --radius-pill: 999px; /* pastilles, boutons, pagination */
+
+  --shadow-overlay: 0 8px 24px rgba(29, 27, 22, 0.14);
+}
+
+[data-theme="sombre"] {
+  --surface-canvas: #12100c;
+  --surface-raised: #1b1813;
+  --surface-sunken: #161310;
+  --surface-hover:  #252118;
+  --hairline:       #241f19;
+
+  --ink-strong:  #f3efe4;
+  --ink:         #ddd7c8;
+  --ink-muted:   #a09885;
+  --ink-inverse: #12100c;
+
+  --border:        #2b2720;
+  --border-strong: #6e6653;
+
+  --brand:        #d9b455;
+  --brand-strong: #e6c778;
+  --brand-tint:   #2e2616;
+  --accent:       #e3c46a;
+
+  --status-up:      #6fb383;   --status-up-bg:   #16261a;
+  --status-warn:    #e08a4a;   --status-warn-bg: #33200f;
+  --status-down:    #ef6a7c;   --status-down-bg: #331519;
+  --neutral-bar:    #5a5345;
+
+  --metric-line: #c9a44f;
+  --metric-area: #2a2314;
+  --focus-ring:  #d9b455;
+
+  --nav-surface:    #16130e;
+  --nav-inner:      #221d15;
+  --nav-ink:        #ddd7c8;
+  --nav-ink-muted:  #948c7a;
+  --nav-active-bg:  #2a2418;
+  --nav-active-ink: #d9b455;
+
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+html { background: var(--surface-canvas); color-scheme: light; }
+html[data-theme="sombre"] { color-scheme: dark; }
+
+body {
+  margin: 0;
+  background: var(--surface-canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Toute donnée machine : chiffres alignés, colonnes stables au rafraîchissement */
+.mono, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

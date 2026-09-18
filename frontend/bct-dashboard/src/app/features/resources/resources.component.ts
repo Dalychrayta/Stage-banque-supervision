@@ -17,54 +17,146 @@ import { Resource } from '../../core/models/resource.model';
   imports: [CommonModule, FormsModule, TableModule, ButtonModule, InputTextModule, DropdownModule, ToastModule, HeaderComponent],
   providers: [MessageService],
   template: `
-    <app-header title="Ressources supervisées"></app-header>
+    <app-header title="Ressources"></app-header>
     <p-toast></p-toast>
     <div class="page-content">
       <div class="page-toolbar">
-        <span class="p-input-icon-left">
-          <i class="pi pi-search"></i>
-          <input pInputText type="text" placeholder="Rechercher..." [(ngModel)]="searchTerm" (input)="filterResources()" />
+        <span class="search-field">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <label for="q" class="sr-only">Rechercher une ressource</label>
+          <input id="q" pInputText type="text" placeholder="nom d'hôte, IP, rôle…" [(ngModel)]="searchTerm" (input)="filterResources()" />
         </span>
         <p-dropdown [options]="statusOptions" [(ngModel)]="selectedStatus" placeholder="Tous les statuts"
-                    (onChange)="filterResources()" [showClear]="true"></p-dropdown>
+                    (onChange)="filterResources()" [showClear]="true" styleClass="status-filter"></p-dropdown>
+        <span class="result-count"><span class="mono">{{ filtered.length }}</span> ressources</span>
       </div>
       <p-table [value]="filtered" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10,25,50]"
-               styleClass="p-datatable-gridlines" [loading]="loading">
+               currentPageReportTemplate="{first} à {last} sur {totalRecords}" [showCurrentPageReport]="true"
+               styleClass="resources-table" [loading]="loading">
         <ng-template pTemplate="header">
-          <tr><th>Nom</th><th>Type</th><th>Environnement</th><th>IP</th><th>Statut</th><th>Dernière activité</th></tr>
+          <tr><th>Hôte</th><th>Rôle</th><th>Adresse</th><th>Env.</th><th>État</th><th>Vérifié</th></tr>
         </ng-template>
         <ng-template pTemplate="body" let-r>
           <tr>
-            <td><strong>{{ r.name }}</strong><br><small class="text-muted">{{ r.resourceId }}</small></td>
-            <td><span class="type-badge">{{ r.type }}</span></td>
-            <td>{{ r.environment }}</td>
-            <td class="font-mono">{{ r.ipAddress || r.host }}</td>
+            <td class="mono host-cell">{{ r.name }}</td>
+            <td class="role-cell">{{ r.description || '—' }}</td>
+            <td class="mono">{{ r.ipAddress || r.host }}</td>
+            <td><span class="env-badge">{{ r.environment }}</span></td>
             <td>
               <span [class]="'status-badge status-' + r.status?.toLowerCase()">
-                <i [class]="getStatusIcon(r.status)"></i> {{ r.status }}
+                <i [class]="getStatusIcon(r.status)" aria-hidden="true"></i> {{ r.status }}
               </span>
             </td>
-            <td>{{ r.lastSeen | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td class="mono time-cell">{{ r.lastSeen | date:'HH:mm:ss' }}</td>
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="6" style="text-align:center;padding:2rem">Aucune ressource trouvée</td></tr>
+          <tr><td colspan="6" class="empty-msg">Aucune ressource trouvée</td></tr>
         </ng-template>
       </p-table>
     </div>
   `,
   styles: [`
-    .page-content { padding: 1.5rem; }
-    .page-toolbar { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; }
-    .status-badge { padding: .25rem .6rem; border-radius: 12px; font-size: .75rem; font-weight: 600; display: inline-flex; align-items: center; gap: .3rem; }
-    .status-up          { background: #f0fff4; color: #38a169; }
-    .status-down        { background: #fff5f5; color: #e53e3e; }
-    .status-degraded    { background: #fffbeb; color: #d69e2e; }
-    .status-unknown     { background: #f7fafc; color: #718096; }
-    .status-maintenance { background: #ebf8ff; color: #3182ce; }
-    .type-badge { background: #edf2f7; color: #4a5568; padding: .2rem .5rem; border-radius: 6px; font-size: .75rem; }
-    .font-mono  { font-family: monospace; font-size: .85rem; }
-    .text-muted { color: #a0aec0; font-size: .75rem; }
+    .page-content { display: flex; flex-direction: column; gap: 16px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+    .page-toolbar {
+      height: 72px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0 16px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .search-field { position: relative; display: inline-flex; align-items: center; }
+    .search-field i { position: absolute; left: 14px; color: var(--ink-muted); font-size: 14px; pointer-events: none; }
+    .search-field input {
+      width: 220px; height: 42px;
+      padding: 0 16px 0 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      background: var(--surface-raised);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .result-count { margin-left: auto; font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    .host-cell { font-size: 13px; font-weight: 500; color: var(--ink-strong); }
+    .role-cell { font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .time-cell { color: var(--ink-muted); font-size: 13px; }
+
+    .env-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--brand-tint);
+      color: var(--brand);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-badge { padding: 4px 11px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+    .status-up          { background: var(--status-up-bg);   color: var(--status-up); }
+    .status-down        { background: var(--status-down-bg); color: var(--status-down); }
+    .status-degraded    { background: var(--status-warn-bg); color: var(--status-warn); }
+    .status-unknown     { background: var(--status-idle-bg); color: var(--status-idle); }
+    .status-maintenance { background: var(--surface-sunken); color: var(--ink-muted); }
+
+    .empty-msg { text-align: center; padding: 2rem; color: var(--ink-muted); }
+
+    :host ::ng-deep .resources-table {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    :host ::ng-deep .resources-table .p-datatable-thead > tr > th {
+      background: var(--surface-raised) !important;
+      color: var(--ink-muted) !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      border-color: var(--border) !important;
+    }
+    :host ::ng-deep .resources-table .p-datatable-tbody > tr > td {
+      height: 56px;
+      border-color: var(--hairline) !important;
+      font-size: 13px;
+    }
+    :host ::ng-deep .resources-table .p-datatable-tbody > tr:hover { background: var(--surface-hover) !important; }
+    :host ::ng-deep .resources-table .p-paginator {
+      background: var(--surface-raised) !important;
+      border-color: var(--hairline) !important;
+      color: var(--ink-muted) !important;
+    }
+    :host ::ng-deep .resources-table .p-paginator .p-paginator-page,
+    :host ::ng-deep .resources-table .p-paginator .p-paginator-next,
+    :host ::ng-deep .resources-table .p-paginator .p-paginator-prev,
+    :host ::ng-deep .resources-table .p-paginator .p-paginator-first,
+    :host ::ng-deep .resources-table .p-paginator .p-paginator-last {
+      border-radius: var(--radius-pill) !important;
+      min-width: 34px !important;
+      height: 34px !important;
+      color: var(--ink) !important;
+    }
+    :host ::ng-deep .resources-table .p-paginator .p-highlight {
+      background: var(--brand) !important;
+      color: var(--ink-inverse) !important;
+    }
+    :host ::ng-deep .status-filter .p-dropdown {
+      border-radius: var(--radius-pill) !important;
+      border-color: var(--border) !important;
+      height: 44px;
+      display: flex;
+      align-items: center;
+    }
   `]
 })
 export class ResourcesComponent implements OnInit {

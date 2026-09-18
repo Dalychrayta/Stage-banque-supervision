@@ -19,21 +19,21 @@ import { interval, Subscription } from 'rxjs';
   imports: [CommonModule, FormsModule, TableModule, ButtonModule, ToastModule, ProgressBarModule, ChipModule, HeaderComponent],
   providers: [MessageService],
   template: `
-    <app-header title="Anomalies détectées"></app-header>
+    <app-header title="Anomalies"></app-header>
     <p-toast></p-toast>
     <div class="page-content">
       <div class="stats-row" *ngIf="stats">
-        <div class="stat-box open"><i class="pi pi-exclamation-circle"></i><div><span>{{ stats.open }}</span><small>Ouverts</small></div></div>
-        <div class="stat-box resolved"><i class="pi pi-check-circle"></i><div><span>{{ stats.resolved }}</span><small>Résolus</small></div></div>
-        <div class="stat-box total"><i class="pi pi-list"></i><div><span>{{ stats.total }}</span><small>Total</small></div></div>
-        <div class="summary-item critical"><i class="pi pi-times-circle"></i><span>{{ stats.criticalOpen }} CRITICAL</span></div>
-        <div class="summary-item warning"><i class="pi pi-exclamation-triangle"></i><span>{{ stats.warningOpen }} WARNING</span></div>
-        <div class="refresh-info"><i class="pi pi-refresh"></i> Actualisation auto 30s</div>
+        <div class="stat-box open"><i class="pi pi-exclamation-circle" aria-hidden="true"></i><div><span>{{ stats.open }}</span><small>Ouverts</small></div></div>
+        <div class="stat-box resolved"><i class="pi pi-check-circle" aria-hidden="true"></i><div><span>{{ stats.resolved }}</span><small>Résolus</small></div></div>
+        <div class="stat-box total"><i class="pi pi-list" aria-hidden="true"></i><div><span>{{ stats.total }}</span><small>Total</small></div></div>
+        <div class="summary-item critical"><i class="pi pi-times-circle" aria-hidden="true"></i><span>{{ stats.criticalOpen }} CRITICAL</span></div>
+        <div class="summary-item warning"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i><span>{{ stats.warningOpen }} WARNING</span></div>
+        <div class="refresh-info"><i class="pi pi-refresh" aria-hidden="true"></i> Actualisation auto 30s</div>
       </div>
 
       <p-table [value]="incidents" [rows]="pageSize" [paginator]="true" dataKey="id" [expandedRowKeys]="expandedRows"
                [lazy]="true" [totalRecords]="totalRecords" (onLazyLoad)="onPageChange($event)"
-               styleClass="p-datatable-gridlines p-datatable-sm" [loading]="loading">
+               styleClass="anomalies-table" [loading]="loading">
         <ng-template pTemplate="header">
           <tr><th style="width:2.5rem"></th><th>Ressource</th><th>Sévérité</th><th>Score</th><th>Métriques</th><th>Cause</th><th>Confiance</th><th>Statut</th><th>Date</th><th>Action</th></tr>
         </ng-template>
@@ -43,12 +43,12 @@ import { interval, Subscription } from 'rxjs';
               <button pButton type="button" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
                       class="p-button-text p-button-sm" (click)="toggleRow(i)"></button>
             </td>
-            <td><strong>{{ i.resourceName }}</strong></td>
+            <td><strong class="mono host-name">{{ i.resourceName }}</strong></td>
             <td><span [class]="'sev-badge sev-' + i.severity?.toLowerCase()">{{ i.severity }}</span></td>
             <td>
               <div class="score-bar">
                 <p-progressBar [value]="getScorePercent(i.anomalyScore)" [showValue]="false" styleClass="score-pb"></p-progressBar>
-                <span>{{ i.anomalyScore | number:'1.2-2' }}</span>
+                <span class="mono">{{ i.anomalyScore | number:'1.2-2' }}</span>
               </div>
             </td>
             <td>
@@ -73,9 +73,9 @@ import { interval, Subscription } from 'rxjs';
                 </ng-template>
               </div>
             </td>
-            <td>{{ (i.confidenceScore * 100) | number:'1.0-0' }}%</td>
+            <td class="mono">{{ (i.confidenceScore * 100) | number:'1.0-0' }}%</td>
             <td><span [class]="'stat-dot stat-' + i.status?.toLowerCase()">{{ i.status }}</span></td>
-            <td>{{ i.analyzedAt | date:'dd/MM HH:mm' }}
+            <td class="mono time-cell">{{ i.analyzedAt | date:'dd/MM HH:mm' }}
               <span *ngIf="i.occurrenceCount && i.occurrenceCount > 1" class="occurrence-badge"
                     title="Nombre de détections consécutives pour cette même condition, tant qu'elle reste ouverte">
                 vu {{ i.occurrenceCount }}×
@@ -92,8 +92,8 @@ import { interval, Subscription } from 'rxjs';
           <tr class="expanded-row">
             <td colspan="10">
               <div class="detail-grid">
-                <div class="detail-section"><h4><i class="pi pi-search"></i> Cause identifiée</h4><p>{{ i.rootCause }}</p></div>
-                <div class="detail-section"><h4><i class="pi pi-lightbulb"></i> Recommandation</h4><p>{{ i.recommendation }}</p></div>
+                <div class="detail-section"><h4><i class="pi pi-search" aria-hidden="true"></i> Cause identifiée</h4><p>{{ i.rootCause }}</p></div>
+                <div class="detail-section"><h4><i class="pi pi-lightbulb" aria-hidden="true"></i> Recommandation</h4><p>{{ i.recommendation }}</p></div>
               </div>
             </td>
           </tr>
@@ -102,38 +102,91 @@ import { interval, Subscription } from 'rxjs';
     </div>
   `,
   styles: [`
-    .page-content { padding: 1.5rem; }
-    .stats-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .stat-box { background: #fff; border-radius: 10px; padding: .6rem 1.1rem; display: flex; align-items: center; gap: .6rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-    .stat-box i { font-size: 1.3rem; } .stat-box span { display: block; font-size: 1.4rem; font-weight: 700; line-height: 1; } .stat-box small { color: #718096; font-size: .75rem; }
-    .stat-box.open i { color: #e53e3e; } .stat-box.resolved i { color: #38a169; } .stat-box.total i { color: #6c9bff; }
-    .summary-item { display: flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .9rem; }
-    .critical { color: #e53e3e; } .warning { color: #d69e2e; }
-    .refresh-info { margin-left: auto; color: #a0aec0; font-size: .8rem; }
-    .sev-badge { padding: .2rem .6rem; border-radius: 12px; font-size: .75rem; font-weight: 700; }
-    .sev-critical { background: #fff5f5; color: #e53e3e; }
-    .sev-warning  { background: #fffbeb; color: #d69e2e; }
-    .sev-normal   { background: #f0fff4; color: #38a169; }
+    .page-content { display: flex; flex-direction: column; gap: 16px; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    .stats-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .stat-box {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .stat-box i { font-size: 1.2rem; }
+    .stat-box span { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.3rem; font-weight: 600; line-height: 1; color: var(--ink-strong); }
+    .stat-box small { color: var(--ink-muted); font-size: .72rem; }
+    .stat-box.open i      { color: var(--status-down); }
+    .stat-box.resolved i  { color: var(--status-up); }
+    .stat-box.total i     { color: var(--ink-muted); }
+    .summary-item { display: flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .85rem; }
+    .critical { color: var(--status-down); } .warning { color: var(--status-warn); }
+    .refresh-info { margin-left: auto; color: var(--ink-muted); font-size: .78rem; }
+
+    .sev-badge { padding: 4px 11px; border-radius: var(--radius-pill); font-size: .72rem; font-weight: 700; }
+    .sev-critical { background: var(--status-down-bg); color: var(--status-down); }
+    .sev-warning  { background: var(--status-warn-bg); color: var(--status-warn); }
+    .sev-normal   { background: var(--status-up-bg);   color: var(--status-up); }
+
     .score-bar { display: flex; align-items: center; gap: .5rem; font-size: .8rem; }
+    .score-bar .mono { font-size: 14px; font-weight: 600; color: var(--ink-strong); }
     .chips-cell { display: flex; flex-wrap: wrap; gap: .25rem; }
-    .category-tag { background: #edf2f7; color: #2d3748; padding: .2rem .5rem; border-radius: 6px; font-size: .75rem; font-family: monospace; }
-    .category-tag.corrected { background: #ebf8ff; color: #2b6cb0; }
+
+    .category-tag { background: var(--surface-sunken); color: var(--ink); padding: 3px 9px; border-radius: var(--radius-sm); font-size: .72rem; font-family: var(--font-mono); }
+    .category-tag.corrected { background: var(--brand-tint); color: var(--brand); }
     .cause-cell { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
-    .cat-edit { padding: 0 .25rem !important; }
-    .ro-hint { color: #a0aec0; font-size: .72rem; font-style: italic; }
-    .corrected-by { color: #3182ce; font-size: .68rem; }
-    .occurrence-badge { display: block; color: #a0aec0; font-size: .68rem; margin-top: .15rem; }
-    .cat-select { font-size: .75rem; padding: .15rem .3rem; border: 1px solid #cbd5e0; border-radius: 4px; font-family: monospace; }
-    .stat-dot { font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: 8px; }
-    .stat-open        { background: #fff5f5; color: #e53e3e; }
-    .stat-resolved    { background: #f0fff4; color: #38a169; }
-    .stat-in_progress { background: #ebf8ff; color: #3182ce; }
-    .row-critical { background: #fffafa !important; }
-    .row-warning  { background: #fffff8 !important; }
-    .expanded-row { background: #f7fafc !important; }
+    .cat-edit { padding: 0 .25rem !important; color: var(--ink-muted); }
+    .ro-hint { color: var(--ink-muted); font-size: .72rem; font-style: italic; }
+    .corrected-by { color: var(--brand); font-size: .68rem; }
+    .occurrence-badge { display: block; color: var(--ink-muted); font-size: .68rem; margin-top: .15rem; }
+    .cat-select { font-size: .75rem; padding: .15rem .3rem; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); background: var(--surface-raised); color: var(--ink); }
+
+    .stat-dot { font-size: .72rem; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-pill); }
+    .stat-open        { background: var(--status-down-bg); color: var(--status-down); }
+    .stat-resolved    { background: var(--status-up-bg);   color: var(--status-up); }
+    .stat-in_progress { background: var(--surface-sunken); color: var(--ink-muted); }
+    .time-cell { color: var(--ink-muted); }
+
+    .host-name { color: var(--ink-strong); font-weight: 500; }
+
+    .row-critical { box-shadow: inset 4px 0 0 var(--status-down); }
+    .row-warning  { box-shadow: inset 4px 0 0 var(--status-warn); }
+    .expanded-row { background: var(--surface-sunken) !important; }
     .detail-grid { padding: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    .detail-section h4 { display: flex; align-items: center; gap: .5rem; color: #2d3748; font-size: .9rem; margin-bottom: .5rem; }
-    .detail-section p { color: #4a5568; font-size: .85rem; line-height: 1.5; }
+    .detail-section h4 { display: flex; align-items: center; gap: .5rem; color: var(--ink-strong); font-size: .9rem; margin-bottom: .5rem; font-weight: 700; }
+    .detail-section p { color: var(--ink-muted); font-size: .85rem; line-height: 1.5; }
+
+    :host ::ng-deep .anomalies-table {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    :host ::ng-deep .anomalies-table .p-datatable-thead > tr > th {
+      background: var(--surface-raised) !important;
+      color: var(--ink-muted) !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      border-color: var(--border) !important;
+    }
+    :host ::ng-deep .anomalies-table .p-datatable-tbody > tr > td {
+      min-height: 56px;
+      border-color: var(--hairline) !important;
+      font-size: 13px;
+      color: var(--ink);
+    }
+    :host ::ng-deep .anomalies-table .p-datatable-tbody > tr:hover { background: var(--surface-hover) !important; }
+    :host ::ng-deep .anomalies-table .p-paginator {
+      background: var(--surface-raised) !important;
+      border-color: var(--hairline) !important;
+      color: var(--ink-muted) !important;
+    }
+    :host ::ng-deep .anomalies-table .p-paginator .p-highlight {
+      background: var(--brand) !important;
+      color: var(--ink-inverse) !important;
+    }
   `]
 })
 export class AnomaliesComponent implements OnInit, OnDestroy {

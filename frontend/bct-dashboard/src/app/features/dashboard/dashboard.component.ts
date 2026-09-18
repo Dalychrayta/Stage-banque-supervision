@@ -18,21 +18,36 @@ import { interval, Subscription } from 'rxjs';
     <div class="dashboard-content">
 
       <div class="kpi-grid">
-        <div class="kpi-card kpi-total">
-          <div class="kpi-icon"><i class="pi pi-server"></i></div>
-          <div class="kpi-info"><span class="kpi-value">{{ stats?.total ?? 0 }}</span><span class="kpi-label">Ressources</span></div>
+        <div class="kpi-card">
+          <span class="kpi-top">
+            <span class="kpi-label">Ressources</span>
+            <span class="kpi-badge kpi-badge-neutral"><i class="pi pi-server" aria-hidden="true"></i></span>
+          </span>
+          <span class="kpi-value">{{ stats?.total ?? 0 }}</span>
         </div>
-        <div class="kpi-card kpi-up">
-          <div class="kpi-icon"><i class="pi pi-check-circle"></i></div>
-          <div class="kpi-info"><span class="kpi-value">{{ stats?.up ?? 0 }}</span><span class="kpi-label">Opérationnelles</span></div>
+        <div class="kpi-card">
+          <span class="kpi-top">
+            <span class="kpi-label">Opérationnelles</span>
+            <span class="kpi-badge kpi-badge-up" *ngIf="stats && stats.total">{{ stats.up / stats.total * 100 | number:'1.0-0' }} %</span>
+          </span>
+          <span class="kpi-value-split">
+            <span class="kpi-value kpi-up">{{ stats?.up ?? 0 }}</span>
+            <span class="kpi-value-suffix">/{{ stats?.total ?? 0 }}</span>
+          </span>
         </div>
-        <div class="kpi-card kpi-down">
-          <div class="kpi-icon"><i class="pi pi-times-circle"></i></div>
-          <div class="kpi-info"><span class="kpi-value">{{ stats?.down ?? 0 }}</span><span class="kpi-label">En panne</span></div>
+        <div class="kpi-card">
+          <span class="kpi-top">
+            <span class="kpi-label">En panne</span>
+            <span class="kpi-badge kpi-badge-down"><i class="pi pi-times-circle" aria-hidden="true"></i></span>
+          </span>
+          <span class="kpi-value kpi-down">{{ stats?.down ?? 0 }}</span>
         </div>
-        <div class="kpi-card kpi-warn">
-          <div class="kpi-icon"><i class="pi pi-exclamation-circle"></i></div>
-          <div class="kpi-info"><span class="kpi-value">{{ openIncidents.length }}</span><span class="kpi-label">Incidents ouverts</span></div>
+        <div class="kpi-card">
+          <span class="kpi-top">
+            <span class="kpi-label">Incidents ouverts</span>
+            <span class="kpi-badge kpi-badge-warn"><i class="pi pi-exclamation-circle" aria-hidden="true"></i></span>
+          </span>
+          <span class="kpi-value" [class.kpi-down]="openIncidents.length > 0">{{ openIncidents.length }}</span>
         </div>
       </div>
 
@@ -49,45 +64,87 @@ import { interval, Subscription } from 'rxjs';
       </div>
 
       <p-card header="Incidents récents">
-        <p-table [value]="openIncidents" [rows]="5" [paginator]="openIncidents.length > 5" styleClass="p-datatable-sm">
+        <p-table [value]="openIncidents" [rows]="5" [paginator]="openIncidents.length > 5" styleClass="p-datatable-sm incident-table">
           <ng-template pTemplate="header">
             <tr><th>Ressource</th><th>Sévérité</th><th>Cause</th><th>Recommandation</th><th>Date</th></tr>
           </ng-template>
           <ng-template pTemplate="body" let-incident>
             <tr>
-              <td><strong>{{ incident.resourceName }}</strong></td>
+              <td class="mono">{{ incident.resourceName }}</td>
               <td><span [class]="'severity-badge severity-' + incident.severity?.toLowerCase()">{{ incident.severity }}</span></td>
               <td>{{ incident.causeCategory }}</td>
               <td class="recommendation-cell">{{ incident.recommendation }}</td>
-              <td>{{ incident.analyzedAt | date:'dd/MM HH:mm' }}</td>
+              <td class="mono time-cell">{{ incident.analyzedAt | date:'HH:mm:ss' }}</td>
             </tr>
           </ng-template>
           <ng-template pTemplate="emptymessage">
-            <tr><td colspan="5" class="empty-msg"><i class="pi pi-check-circle"></i> Aucun incident ouvert</td></tr>
+            <tr><td colspan="5" class="empty-msg"><i class="pi pi-check-circle" aria-hidden="true"></i> Aucun incident ouvert</td></tr>
           </ng-template>
         </p-table>
       </p-card>
     </div>
   `,
   styles: [`
-    .dashboard-content { padding: 1.5rem; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .kpi-card { background: #fff; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid; }
-    .kpi-total { border-color: #6c9bff; } .kpi-total .kpi-icon i { color: #6c9bff; }
-    .kpi-up    { border-color: #38a169; } .kpi-up    .kpi-icon i { color: #38a169; }
-    .kpi-down  { border-color: #e53e3e; } .kpi-down  .kpi-icon i { color: #e53e3e; }
-    .kpi-warn  { border-color: #d69e2e; } .kpi-warn  .kpi-icon i { color: #d69e2e; }
-    .kpi-icon i { font-size: 1.8rem; }
-    .kpi-info { display: flex; flex-direction: column; }
-    .kpi-value { font-size: 2rem; font-weight: 700; color: #1a202c; line-height: 1; }
-    .kpi-label { font-size: .8rem; color: #718096; margin-top: .25rem; }
-    .charts-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .severity-badge { padding: .2rem .6rem; border-radius: 12px; font-size: .75rem; font-weight: 600; }
-    .severity-critical { background: #fff5f5; color: #e53e3e; }
-    .severity-warning  { background: #fffbeb; color: #d69e2e; }
-    .severity-normal   { background: #f0fff4; color: #38a169; }
-    .recommendation-cell { font-size: .8rem; color: #4a5568; max-width: 300px; }
-    .empty-msg { text-align: center; padding: 2rem; color: #38a169; }
+    .dashboard-content { display: flex; flex-direction: column; gap: 16px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+    .kpi-card {
+      height: 108px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    .kpi-top { display: flex; align-items: center; gap: 10px; }
+    .kpi-label { flex: none; font-size: 12px; font-weight: 500; color: var(--ink-muted); white-space: nowrap; }
+    .kpi-badge {
+      margin-left: auto;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .kpi-badge-neutral { width: 30px; height: 30px; padding: 0; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--ink-muted); }
+    .kpi-badge-up   { background: var(--status-up-bg);   color: var(--status-up); }
+    .kpi-badge-warn { width: 30px; height: 30px; padding: 0; border-radius: var(--radius-sm); background: var(--status-warn-bg); color: var(--status-warn); }
+    .kpi-badge-down { width: 30px; height: 30px; padding: 0; border-radius: var(--radius-sm); background: var(--status-down-bg); color: var(--status-down); }
+
+    .kpi-value {
+      margin-top: auto;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 34px; line-height: 38px;
+      font-weight: 600; letter-spacing: -0.02em;
+      color: var(--ink-strong);
+    }
+    .kpi-value-split { margin-top: auto; display: flex; align-items: baseline; gap: 7px; }
+    .kpi-value-split .kpi-value { margin-top: 0; }
+    .kpi-value-suffix { font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--ink-muted); }
+    .kpi-up   { color: var(--status-up); }
+    .kpi-down { color: var(--status-down); }
+
+    .charts-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+
+    .severity-badge { padding: 4px 11px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
+    .severity-critical { background: var(--status-down-bg); color: var(--status-down); }
+    .severity-warning  { background: var(--status-warn-bg); color: var(--status-warn); }
+    .severity-normal   { background: var(--status-up-bg);   color: var(--status-up); }
+    .recommendation-cell { font-size: 13px; color: var(--ink-muted); max-width: 300px; }
+    .time-cell { color: var(--ink-muted); }
+    .empty-msg { text-align: center; padding: 2rem; color: var(--status-up); }
+
+    :host ::ng-deep .p-card .p-card-title {
+      flex: none;
+      white-space: nowrap;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--ink-strong);
+    }
+    :host ::ng-deep .p-card .p-card-body { padding: 20px; }
   `]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
@@ -97,9 +154,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   statusChartData: any = {};
   severityChartData: any = {};
   trendChartData: any = {};
-  doughnutOptions = { plugins: { legend: { position: 'bottom' } }, cutout: '65%' };
-  barOptions = { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
-  lineOptions = { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } };
+  // Couleur fixe (pas var(--jeton) : Chart.js dessine sur un <canvas>, hors
+  // de portée du CSS) choisie pour rester lisible sur fond clair ET sombre.
+  private readonly chartTickColor = '#8c8474';
+  doughnutOptions = { plugins: { legend: { position: 'bottom', labels: { color: this.chartTickColor } } }, cutout: '65%' };
+  barOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: this.chartTickColor } }, y: { beginAtZero: true, ticks: { color: this.chartTickColor } } } };
+  lineOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: this.chartTickColor } }, y: { beginAtZero: true, ticks: { color: this.chartTickColor } } } };
 
   constructor(private api: ApiService, @Inject(PLATFORM_ID) private platformId: Object) {}
 
@@ -117,10 +177,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildStatusChart(s: ResourceStats): void {
-    this.statusChartData = { labels: ['UP','DOWN','Dégradées','Inconnues'], datasets: [{ data: [s.up,s.down,s.degraded,s.unknown], backgroundColor: ['#38a169','#e53e3e','#d69e2e','#718096'] }] };
+    this.statusChartData = { labels: ['UP','DOWN','Dégradées','Inconnues'], datasets: [{ data: [s.up,s.down,s.degraded,s.unknown], backgroundColor: ['#3b6b46','#9c1c2e','#9a4a10','#6e685a'] }] };
   }
   private buildSeverityChart(incidents: IncidentAnalysis[]): void {
-    this.severityChartData = { labels: ['CRITICAL','WARNING'], datasets: [{ data: [incidents.filter(i=>i.severity==='CRITICAL').length, incidents.filter(i=>i.severity==='WARNING').length], backgroundColor: ['#e53e3e','#d69e2e'] }] };
+    this.severityChartData = { labels: ['CRITICAL','WARNING'], datasets: [{ data: [incidents.filter(i=>i.severity==='CRITICAL').length, incidents.filter(i=>i.severity==='WARNING').length], backgroundColor: ['#9c1c2e','#9a4a10'] }] };
   }
   private buildTrendChart(incidents: IncidentAnalysis[]): void {
     // Vraies données : compte les incidents détectés dans chacune des 24 dernières heures.
@@ -134,7 +194,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const d = new Date(now - (23 - i) * 3600000);
       return `${d.getHours()}h`;
     });
-    this.trendChartData = { labels, datasets: [{ data: counts, borderColor: '#6c9bff', backgroundColor: 'rgba(108,155,255,.1)', fill: true, tension: 0.4 }] };
+    this.trendChartData = { labels, datasets: [{ data: counts, borderColor: '#a8842a', backgroundColor: 'rgba(168,132,42,.15)', fill: true, tension: 0.4 }] };
   }
 
   ngOnDestroy(): void { this.sub.unsubscribe(); }

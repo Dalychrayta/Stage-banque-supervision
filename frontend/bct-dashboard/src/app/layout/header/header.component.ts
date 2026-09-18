@@ -14,10 +14,10 @@ import { AuthService } from '../../core/services/auth.service';
       <div class="header-right">
         <span class="live-badge">
           <span class="dot"></span> LIVE
+          <span class="time">{{ currentTime | date:'HH:mm:ss' }}</span>
         </span>
-        <span class="time">{{ currentTime | date:'HH:mm:ss' }}</span>
-        <button class="logout-btn" (click)="logout()" title="Se déconnecter">
-          <i class="pi pi-sign-out"></i>
+        <button class="logout-btn" (click)="logout()" aria-label="Se déconnecter" title="Se déconnecter">
+          <i class="pi pi-sign-out" aria-hidden="true"></i>
         </button>
       </div>
     </header>
@@ -27,58 +27,63 @@ import { AuthService } from '../../core/services/auth.service';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
-      background: #fff;
-      border-bottom: 1px solid #e2e8f0;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      height: 64px;
+      flex: none;
     }
     .page-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #1a202c;
       margin: 0;
+      font-size: 28px;
+      line-height: 34px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink-strong);
+      white-space: nowrap;
     }
     .header-right {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 10px;
     }
     .live-badge {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      background: #f0fff4;
-      color: #38a169;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      gap: 7px;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--status-up);
+      font-size: 12px;
       font-weight: 600;
+      white-space: nowrap;
     }
     .dot {
-      width: 8px; height: 8px;
-      background: #38a169;
+      width: 7px; height: 7px;
+      background: var(--status-up);
       border-radius: 50%;
-      animation: pulse 1.5s infinite;
+      flex: none;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    .time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-muted);
+      font-weight: 500;
     }
-    .time { color: #718096; font-size: 0.9rem; font-family: monospace; }
     .logout-btn {
-      background: none;
-      border: none;
-      color: #718096;
+      width: 44px; height: 44px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      color: var(--ink);
       cursor: pointer;
-      font-size: 1rem;
-      padding: 0.35rem;
-      border-radius: 6px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex: none;
     }
-    .logout-btn:hover { background: #f7fafc; color: #e53e3e; }
+    .logout-btn:hover { color: var(--status-down); border-color: var(--status-down); }
   `]
 })
 export class HeaderComponent implements OnDestroy {

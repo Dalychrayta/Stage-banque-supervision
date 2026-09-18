@@ -9,21 +9,27 @@ import { CommonModule } from '@angular/common';
   template: `
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <i class="pi pi-chart-line"></i>
-        <span>BCT Supervision</span>
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 7 4-14 3 7h4"></path></svg>
+        </span>
+        <span class="brand-name">Supervision</span>
       </div>
       <nav class="sidebar-nav">
         <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-          <i class="pi pi-home"></i><span>Dashboard</span>
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="8.5" rx="2"></rect><rect x="13.5" y="3" width="7.5" height="5.5" rx="2"></rect><rect x="3" y="14.5" width="7.5" height="6.5" rx="2"></rect><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="2"></rect></svg>
+          <span>Dashboard</span>
         </a>
         <a routerLink="/resources" routerLinkActive="active" class="nav-item">
-          <i class="pi pi-server"></i><span>Ressources</span>
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="6" rx="2"></rect><rect x="3" y="13.5" width="18" height="6" rx="2"></rect></svg>
+          <span>Ressources</span>
         </a>
         <a routerLink="/anomalies" routerLinkActive="active" class="nav-item">
-          <i class="pi pi-exclamation-triangle"></i><span>Anomalies</span>
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19L12 4Z"></path><path d="M12 10v4"></path><path d="M12 17.5v.5"></path></svg>
+          <span>Anomalies</span>
         </a>
         <a routerLink="/healing" routerLinkActive="active" class="nav-item">
-          <i class="pi pi-wrench"></i><span>Auto-Healing</span>
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5a4 4 0 1 0 3 6.9L21 17l-2 2-3.6-3.5a4 4 0 0 1-6.9-3"></path><path d="M9 9 4 4"></path></svg>
+          <span>Auto-réparation</span>
         </a>
       </nav>
       <div class="sidebar-footer">
@@ -33,48 +39,68 @@ import { CommonModule } from '@angular/common';
   `,
   styles: [`
     .sidebar {
-      width: 240px;
-      min-height: 100vh;
-      background: #1a1f3a;
+      background: var(--nav-surface);
+      border-radius: var(--radius-lg);
+      min-height: 100%;
+      padding: 22px 16px;
       display: flex;
       flex-direction: column;
-      position: fixed;
-      left: 0; top: 0;
-      z-index: 100;
+      box-sizing: border-box;
     }
     .sidebar-brand {
-      padding: 1.5rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      color: #fff;
-      font-size: 1.1rem;
+      gap: 11px;
+      padding: 0 6px 22px;
+    }
+    .brand-mark {
+      width: 34px; height: 34px;
+      border-radius: 11px;
+      background: var(--brand);
+      color: var(--ink-inverse);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+    .brand-name {
+      font-size: 15px;
       font-weight: 700;
-      border-bottom: 1px solid #2d3561;
-      i { font-size: 1.4rem; color: #6c9bff; }
+      letter-spacing: -0.01em;
+      color: var(--nav-ink);
+      white-space: nowrap;
     }
     .sidebar-nav {
-      flex: 1;
-      padding: 1rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.85rem 1.5rem;
-      color: #a0aec0;
+      gap: 11px;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: var(--radius-md);
+      color: var(--nav-ink-muted);
       text-decoration: none;
-      transition: all 0.2s;
-      font-size: 0.9rem;
-      i { width: 18px; }
-      &:hover { background: #2d3561; color: #fff; }
-      &.active { background: #2d3561; color: #6c9bff; border-left: 3px solid #6c9bff; }
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      .nav-icon { flex: none; }
+      &:hover { color: var(--nav-ink); }
+      &.active {
+        background: var(--nav-active-bg);
+        color: var(--nav-active-ink);
+        font-weight: 600;
+      }
     }
     .sidebar-footer {
-      padding: 1rem 1.5rem;
-      color: #4a5568;
-      font-size: 0.75rem;
-      border-top: 1px solid #2d3561;
+      margin-top: auto;
+      padding: 16px 6px 0;
+      font-size: 11px;
+      line-height: 16px;
+      color: var(--nav-ink-muted);
     }
   `]
 })
