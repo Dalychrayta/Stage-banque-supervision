@@ -5,6 +5,7 @@ import com.bct.rca.service.RcaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/rca")
@@ -71,5 +73,21 @@ public class RcaController {
     @PostMapping("/analyze")
     public ResponseEntity<IncidentAnalysis> analyzeManually(@RequestBody Map<String, Object> event) {
         return ResponseEntity.ok(rcaService.analyzeAnomaly(event));
+    }
+
+    /**
+     * Un identifiant qui n'existe pas est une erreur du client, pas du serveur :
+     * sans ce traitement Spring répondait 500 et écrivait une trace d'erreur
+     * complète dans les logs pour une simple faute de frappe.
+     */
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<Map<String, String>> handleNotFound(NoSuchElementException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+    }
+
+    /** Catégorie de correction vide, page négative... : requête invalide, donc 400. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidRequest(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
 }
