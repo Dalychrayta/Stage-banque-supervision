@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* Jetons : identiques à frontend/bct-dashboard/src/styles/tokens.css (thème clair). */
+:root {
+  --surface-canvas: #f7f4ed; --surface-raised: #ffffff; --hairline: #efeae0;
+  --ink-strong: #1d1b16; --ink: #3c382f; --ink-muted: #6e685a; --ink-inverse: #ffffff;
+  --border: #e2ddd1; --border-strong: #8c8474;
+  --brand: #8a6d1f; --brand-strong: #6b5314;
+  --status-down: #9c1c2e; --status-down-bg: #fbe8ea;
+  --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --radius-md: 14px; --radius-xl: 24px; --radius-pill: 999px;
+}
+
+html, body, .login-pf, .pf-v5-c-login {
+  background: var(--surface-canvas) !important;
+  background-image: none !important;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.pf-v5-c-login__container { display: block; width: min(460px, 100%); max-width: 460px; margin: 0 auto; padding: 6vh 16px 0; box-sizing: border-box; }
+.pf-v5-c-login__main, .pf-v5-c-login__main-body, .pf-v5-c-login__main-header { width: 100%; box-sizing: border-box; }
+.pf-v5-c-login__main-body { padding: 0 24px 8px; }
+.pf-v5-c-login__main-header { padding: 16px 24px 12px; }
+
+/* Marque au-dessus de la carte : texte seul, pas de logo officiel. */
+.pf-v5-c-login__header { display: flex; justify-content: center; padding-bottom: 20px; }
+.pf-v5-c-login__header .pf-v5-c-brand { display: none; }
+.pf-v5-c-login__header::before {
+  content: "Supervision BCT";
+  font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink-strong);
+}
+
+.pf-v5-c-login__main {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+  padding: 24px 16px;
+}
+.pf-v5-c-login__main-header { border: 0; }
+.pf-v5-c-login__main-header .pf-v5-c-title {
+  font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink-strong);
+}
+
+.pf-v5-c-form__label-text { font-size: 13px; font-weight: 600; color: var(--ink); }
+.pf-v5-c-form-control {
+  height: 48px; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--surface-raised); color: var(--ink); font-family: inherit; font-size: 14px;
+}
+.pf-v5-c-form-control::before, .pf-v5-c-form-control::after { display: none; }
+.pf-v5-c-form-control input { color: var(--ink); font-family: inherit; }
+.pf-v5-c-form-control:focus-within { border-color: var(--brand); }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control { border-radius: var(--radius-pill); color: var(--ink-muted); }
+
+.pf-v5-c-button.pf-m-primary {
+  height: 52px; border: 0; border-radius: var(--radius-pill);
+  background: var(--brand); color: var(--ink-inverse);
+  font-family: inherit; font-size: 15px; font-weight: 600;
+}
+.pf-v5-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:focus { background: var(--brand-strong); }
+
+.pf-v5-c-login a { color: var(--brand); }
+.pf-v5-c-form__helper-text, .pf-m-error, .kc-feedback-text { color: var(--status-down); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.pf-v5-c-input-group { align-items: stretch; }
+.pf-v5-c-input-group .pf-v5-c-form-control { flex: 1 1 auto; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+  background: transparent !important; border: 0 !important; width: 36px; min-width: 36px; height: 36px; align-self: center; margin-left: -44px; z-index: 1;
+}
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control::after { display: none; }
+.pf-v5-c-form-control input { height: 100%; padding: 0 44px 0 18px; }
+.pf-v5-c-login__main-footer { padding: 8px 24px 16px; }

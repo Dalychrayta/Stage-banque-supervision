@@ -5,6 +5,10 @@
   "registrationAllowed": false,
   "loginWithEmailAllowed": false,
   "accessTokenLifespan": 1800,
+  "loginTheme": "bct-supervision",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr"],
+  "defaultLocale": "fr",
   "roles": {
     "realm": [
       { "name": "VIEWER", "description": "Lecture seule : tableau de bord, historique. Aucune action." },

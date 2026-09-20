@@ -21,3 +21,7 @@
 FROM quay.io/keycloak/keycloak:26.0
 
 COPY realm-bct.json /opt/keycloak/data/import/realm-bct.json
+
+# Thème de connexion : ajoute uniquement du CSS et des libellés français à
+# keycloak.v2 (login.ftl reste celui de Keycloak, qui porte le jeton CSRF).
+COPY themes /opt/keycloak/themes
