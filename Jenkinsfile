@@ -278,6 +278,20 @@ pipeline {
                     dir('bct-images/infra') {
                         sh '''
                             cp "$BCT_ENV_FILE" .env
+                            # Garde-fou : docker compose remplace en silence une variable absente
+                            # par une chaîne vide (mots de passe de base vides, SMTP muet...) puis
+                            # recrée des conteneurs cassés — Oracle compris, dont la configuration
+                            # changerait. On refuse donc de déployer si le fichier secret ne définit
+                            # pas TOUTES les variables sans valeur par défaut de docker-compose.yml.
+                            MISSING=""
+                            for v in $(grep -oE '[$][{][A-Z_]+[}]' docker-compose.yml | tr -d '${}' | sort -u); do
+                                grep -qE "^$v=.+" .env || MISSING="$MISSING $v"
+                            done
+                            if [ -n "$MISSING" ]; then
+                                echo "ÉCHEC : le credential Jenkins bct-env-file ne définit pas :$MISSING"
+                                echo "Ajoutez ces lignes au fichier secret (mêmes valeurs que infra/.env en local), puis relancez. Rien n'a été redéployé."
+                                exit 1
+                            fi
                             echo "$GHCR_TOKEN" | docker login ${REGISTRY} -u "$GHCR_USER" --password-stdin
                             # Keycloak (image publique) doit tourner avant api-gateway (depends_on).
                             docker compose up -d keycloak
