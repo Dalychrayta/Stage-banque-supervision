@@ -134,3 +134,22 @@ html, body, .login-pf, .pf-v5-c-login {
   .pf-v5-c-login__main-body { padding-bottom: 0; }
   .pf-v5-c-form__actions { margin-top: 10px; }
 }
+
+/* ---- Panneau de marque, version soignée : halo, grille estompée, ligne de pouls, logo BCT ---- */
+@media (min-width: 900px) {
+  html::before {
+    background-color: #23201a;
+    background-image:
+      radial-gradient(640px 420px at 88% 92%, rgba(212, 167, 44, 0.20), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Cdefs%3E%3Cpattern id='d' width='32' height='32' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='16' cy='16' r='2' fill='%234a4232'/%3E%3C/pattern%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23fff'/%3E%3C/linearGradient%3E%3Cmask id='m'%3E%3Crect width='640' height='360' fill='url(%23g)'/%3E%3C/mask%3E%3Cfilter id='b' x='-10%25' y='-60%25' width='120%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='640' height='360' fill='url(%23d)' mask='url(%23m)'/%3E%3Cpath d='M0 250H150L190 250L215 172L250 318L288 118L322 250H640' fill='none' stroke='%23d4a72c' stroke-width='4' stroke-linejoin='round' stroke-linecap='round' filter='url(%23b)' opacity='.6'/%3E%3Cpath d='M0 250H150L190 250L215 172L250 318L288 118L322 250H640' fill='none' stroke='%23d4a72c' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round'/%3E%3Ccircle cx='288' cy='118' r='12' fill='none' stroke='%23d4a72c' stroke-opacity='.35'/%3E%3Ccircle cx='288' cy='118' r='5' fill='%23d4a72c'/%3E%3Ccircle cx='600' cy='250' r='9' fill='%233b6b46' fill-opacity='.35'/%3E%3Ccircle cx='600' cy='250' r='4' fill='%236fb383'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat;
+    background-position: 0 0, right 0 bottom 110px;
+    background-size: 100% 100%, 640px 360px;
+  }
+  html::after {
+    content: ""; left: 68px; bottom: 56px; width: 236px; height: 100px;
+    background: url("../img/bct-logo-light.png") no-repeat left bottom / contain;
+  }
+  body::before { top: 200px; }
+  body::after  { top: 352px; }
+}

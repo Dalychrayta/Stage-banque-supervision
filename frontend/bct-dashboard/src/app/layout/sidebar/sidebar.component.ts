@@ -33,7 +33,7 @@ import { CommonModule } from '@angular/common';
         </a>
       </nav>
       <div class="sidebar-footer">
-        <span>Banque Centrale de Tunisie</span>
+        <img class="bct-logo" src="bct-logo-light.png" alt="Banque Centrale de Tunisie" width="170" />
       </div>
     </aside>
   `,
@@ -95,6 +95,7 @@ import { CommonModule } from '@angular/common';
         font-weight: 600;
       }
     }
+    .bct-logo { display: block; width: 100%; max-width: 170px; height: auto; opacity: .92; }
     .sidebar-footer {
       margin-top: auto;
       padding: 16px 6px 0;
