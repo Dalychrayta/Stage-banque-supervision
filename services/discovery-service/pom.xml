@@ -96,6 +96,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- CVE-2026-8763 (CRITICAL) : spring-cloud-starter 4.3.3 tire bcprov-jdk18on 1.80.2,
+                 corrigé en 1.85. Le scan Trivy du pipeline bloque sinon. À retirer dès qu'une
+                 version de Spring Cloud embarque une bibliothèque corrigée. -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>1.85</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
