@@ -30,7 +30,7 @@ import { Resource } from '../../core/models/resource.model';
                     (onChange)="filterResources()" [showClear]="true" styleClass="status-filter"></p-dropdown>
         <span class="result-count"><span class="mono">{{ filtered.length }}</span> ressources</span>
       </div>
-      <p-table [value]="filtered" [rows]="10" [paginator]="true" [rowsPerPageOptions]="[10,25,50]"
+      <p-table [value]="filtered" [rows]="10" [paginator]="filtered.length > 10" [rowsPerPageOptions]="[10,25,50]"
                currentPageReportTemplate="{first} à {last} sur {totalRecords}" [showCurrentPageReport]="true"
                styleClass="resources-table" [loading]="loading">
         <ng-template pTemplate="header">
@@ -51,7 +51,15 @@ import { Resource } from '../../core/models/resource.model';
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
-          <tr><td colspan="6" class="empty-msg">Aucune ressource trouvée</td></tr>
+          <tr *ngIf="resources.length === 0"><td colspan="6" class="empty-msg empty-unconfigured">
+            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+            <strong>Aucune ressource supervisée</strong>
+            <span>La découverte n'a encore enregistré aucune ressource.</span>
+          </td></tr>
+          <tr *ngIf="resources.length > 0"><td colspan="6" class="empty-msg">
+            <strong>Aucune ressource ne correspond à ces filtres</strong>
+            <button type="button" class="reset-btn" (click)="resetFilters()">Réinitialiser les filtres</button>
+          </td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -108,7 +116,18 @@ import { Resource } from '../../core/models/resource.model';
     .status-unknown     { background: var(--status-idle-bg); color: var(--status-idle); }
     .status-maintenance { background: var(--surface-sunken); color: var(--ink-muted); }
 
-    .empty-msg { text-align: center; padding: 2rem; color: var(--ink-muted); }
+    .empty-msg { text-align: center; padding: 2rem; height: 160px; color: var(--ink-muted); }
+    .empty-msg strong { display: block; color: var(--ink); font-size: 14px; }
+    .empty-msg span, .empty-msg .reset-btn { margin-top: 8px; }
+    .empty-msg i { display: block; font-size: 1.4rem; margin-bottom: 8px; }
+    .empty-unconfigured, .empty-unconfigured strong { color: var(--status-warn); }
+    .empty-unconfigured span { display: block; color: var(--ink-muted); font-size: 13px; }
+    .reset-btn {
+      height: 44px; padding: 0 18px; border-radius: var(--radius-pill);
+      background: var(--surface-raised); color: var(--ink); border: 1px solid var(--border);
+      font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .reset-btn:hover { border-color: var(--border-strong); }
 
     :host ::ng-deep .resources-table {
       background: var(--surface-raised);
@@ -130,6 +149,7 @@ import { Resource } from '../../core/models/resource.model';
       border-color: var(--hairline) !important;
       font-size: 13px;
     }
+    :host ::ng-deep .resources-table .p-datatable-tbody > tr > td.empty-msg { height: 160px; padding: 2rem; }
     :host ::ng-deep .resources-table .p-datatable-tbody > tr:hover { background: var(--surface-hover) !important; }
     :host ::ng-deep .resources-table .p-paginator {
       background: var(--surface-raised) !important;
@@ -168,6 +188,12 @@ export class ResourcesComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.getResources().subscribe({ next: r => { this.resources = r; this.filtered = r; this.loading = false; }, error: () => this.loading = false });
+  }
+
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.selectedStatus = null;
+    this.filterResources();
   }
 
   filterResources(): void {

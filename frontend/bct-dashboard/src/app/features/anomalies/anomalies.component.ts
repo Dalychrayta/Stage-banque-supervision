@@ -31,7 +31,7 @@ import { interval, Subscription } from 'rxjs';
         <div class="refresh-info"><i class="pi pi-refresh" aria-hidden="true"></i> Actualisation auto 30s</div>
       </div>
 
-      <p-table [value]="incidents" [rows]="pageSize" [paginator]="true" dataKey="id" [expandedRowKeys]="expandedRows"
+      <p-table [value]="incidents" [rows]="pageSize" [paginator]="totalRecords > pageSize" dataKey="id" [expandedRowKeys]="expandedRows"
                [lazy]="true" [totalRecords]="totalRecords" (onLazyLoad)="onPageChange($event)"
                styleClass="anomalies-table" [loading]="loading">
         <ng-template pTemplate="header">
@@ -98,6 +98,9 @@ import { interval, Subscription } from 'rxjs';
             </td>
           </tr>
         </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="10" class="empty-msg"><i class="pi pi-check-circle" aria-hidden="true"></i> Aucune anomalie détectée</td></tr>
+        </ng-template>
       </p-table>
     </div>
   `,
@@ -148,6 +151,7 @@ import { interval, Subscription } from 'rxjs';
     .time-cell { color: var(--ink-muted); }
 
     .host-name { color: var(--ink-strong); font-weight: 500; }
+    .empty-msg { text-align: center; padding: 2rem; height: 160px; color: var(--status-up); }
 
     .row-critical { box-shadow: inset 4px 0 0 var(--status-down); }
     .row-warning  { box-shadow: inset 4px 0 0 var(--status-warn); }

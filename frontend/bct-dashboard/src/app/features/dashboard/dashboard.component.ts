@@ -53,13 +53,25 @@ import { interval, Subscription } from 'rxjs';
 
       <div class="charts-row">
         <p-card header="État des ressources">
-          <p-chart type="doughnut" [data]="statusChartData" [options]="doughnutOptions" height="220"></p-chart>
+          <p-chart *ngIf="hasData(statusChartData)" type="doughnut" [data]="statusChartData" [options]="doughnutOptions" height="220"></p-chart>
+          <div *ngIf="isEmpty(statusChartData)" class="chart-empty chart-empty-warn">
+            <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+            <strong>Aucune ressource supervisée</strong>
+          </div>
         </p-card>
         <p-card header="Incidents par sévérité">
-          <p-chart type="bar" [data]="severityChartData" [options]="barOptions" height="220"></p-chart>
+          <p-chart *ngIf="hasData(severityChartData)" type="bar" [data]="severityChartData" [options]="barOptions" height="220"></p-chart>
+          <div *ngIf="isEmpty(severityChartData)" class="chart-empty">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            <strong>Aucun incident ouvert</strong>
+          </div>
         </p-card>
         <p-card header="Tendance anomalies (24h)">
-          <p-chart type="line" [data]="trendChartData" [options]="lineOptions" height="220"></p-chart>
+          <p-chart *ngIf="hasData(trendChartData)" type="line" [data]="trendChartData" [options]="lineOptions" height="220"></p-chart>
+          <div *ngIf="isEmpty(trendChartData)" class="chart-empty">
+            <i class="pi pi-check-circle" aria-hidden="true"></i>
+            <strong>Aucune anomalie sur 24 h</strong>
+          </div>
         </p-card>
       </div>
 
@@ -126,6 +138,17 @@ import { interval, Subscription } from 'rxjs';
     .kpi-up   { color: var(--status-up); }
     .kpi-down { color: var(--status-down); }
 
+    /* Un graphique sans données ne montre pas un axe gradué de 0 à 1 : le lecteur
+       croirait que la mesure vaut zéro. On affiche un état vide à la place. */
+    .chart-empty {
+      min-height: 220px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+      color: var(--status-up); text-align: center;
+    }
+    .chart-empty i { font-size: 1.6rem; }
+    .chart-empty strong { font-size: 14px; font-weight: 600; }
+    .chart-empty-warn { color: var(--status-warn); }
+
     .charts-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
 
     .severity-badge { padding: 4px 11px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
@@ -160,6 +183,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   doughnutOptions = { plugins: { legend: { position: 'bottom', labels: { color: this.chartTickColor } } }, cutout: '65%' };
   barOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: this.chartTickColor } }, y: { beginAtZero: true, ticks: { color: this.chartTickColor } } } };
   lineOptions = { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: this.chartTickColor } }, y: { beginAtZero: true, ticks: { color: this.chartTickColor } } } };
+
+  // Avant la première réponse le jeu de données est vide ({}) : ni graphique
+  // ni message, pour ne pas afficher « rien à signaler » pendant le chargement.
+  hasData(d: any): boolean {
+    return !!d?.datasets?.[0]?.data?.some((v: number) => v > 0);
+  }
+  isEmpty(d: any): boolean {
+    return !!d?.datasets && !this.hasData(d);
+  }
 
   constructor(private api: ApiService, @Inject(PLATFORM_ID) private platformId: Object) {}
 

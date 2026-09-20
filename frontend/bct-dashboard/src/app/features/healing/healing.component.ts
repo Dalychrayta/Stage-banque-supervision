@@ -34,7 +34,7 @@ import { Resource } from '../../core/models/resource.model';
         <button *ngIf="canOperate" pButton label="Action manuelle" icon="pi pi-play" class="manual-btn" (click)="showManualDialog = true"></button>
       </div>
 
-      <p-table [value]="actions" [rows]="pageSize" [paginator]="true" [lazy]="true" [totalRecords]="totalRecords"
+      <p-table [value]="actions" [rows]="pageSize" [paginator]="totalRecords > pageSize" [lazy]="true" [totalRecords]="totalRecords"
                (onLazyLoad)="onPageChange($event)" styleClass="healing-table" [loading]="loading">
         <ng-template pTemplate="header">
           <tr><th>Ressource</th><th>Action</th><th>Cause</th><th>Demandé par</th><th>Motif</th><th>Statut</th><th>Type</th><th>Résultat</th><th>Date</th></tr>
@@ -53,6 +53,9 @@ import { Resource } from '../../core/models/resource.model';
             <td class="result-cell">{{ a.resultMessage }}</td>
             <td class="mono time-cell">{{ a.triggeredAt | date:'dd/MM HH:mm' }}</td>
           </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="9" class="empty-msg"><i class="pi pi-check-circle" aria-hidden="true"></i> Aucune action de réparation enregistrée</td></tr>
         </ng-template>
       </p-table>
     </div>
@@ -95,6 +98,7 @@ import { Resource } from '../../core/models/resource.model';
       font-size: 13px; font-weight: 600;
     }
     .host-name { color: var(--ink-strong); font-weight: 500; }
+    .empty-msg { text-align: center; padding: 2rem; height: 160px; color: var(--status-up); }
     .time-cell { color: var(--ink-muted); font-size: 13px; }
     .action-tag { background: var(--surface-sunken); color: var(--ink); padding: 3px 9px; border-radius: var(--radius-sm); font-size: .72rem; font-family: var(--font-mono); }
     .ast { font-size: .72rem; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-pill); white-space: nowrap; }
