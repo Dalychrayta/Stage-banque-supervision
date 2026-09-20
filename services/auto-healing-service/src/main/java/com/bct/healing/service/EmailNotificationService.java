@@ -34,8 +34,30 @@ public class EmailNotificationService {
     private String to;
 
     public boolean sendIncidentNotification(String resourceName, String causeCategory, String description, String severity) {
+        return send("[BCT Supervision] Intervention requise — " + resourceName,
+                "Intervention manuelle requise",
+                "%s"
+                        .formatted(HtmlUtils.htmlEscape(resourceName)),
+                resourceName, causeCategory, description, severity);
+    }
+
+    /**
+     * Prévient l'équipe qu'une réparation automatique a échoué techniquement :
+     * sans cet email, l'incident resterait ouvert sans que personne ne le voie.
+     */
+    public boolean sendActionFailureNotification(String resourceName, String causeCategory,
+                                                 String actionLabel, String failureMessage, String severity) {
+        return send("[BCT Supervision] Réparation automatique échouée — " + resourceName,
+                "Réparation automatique échouée",
+                "L'action <b>%s</b> a échoué sur <b>%s</b>. L'incident reste ouvert et demande une intervention."
+                        .formatted(HtmlUtils.htmlEscape(actionLabel), HtmlUtils.htmlEscape(resourceName)),
+                resourceName, causeCategory, failureMessage, severity);
+    }
+
+    private boolean send(String subject, String title, String intro, String resourceName,
+                         String causeCategory, String description, String severity) {
         if (to.isBlank()) {
-            log.warn("NOTIFICATION_EMAIL_TO non configuré — notification NOTIFY_TEAM non envoyée pour {}", resourceName);
+            log.warn("NOTIFICATION_EMAIL_TO non configuré — notification non envoyée pour {}", resourceName);
             return false;
         }
         try {
@@ -43,8 +65,8 @@ public class EmailNotificationService {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, false, "UTF-8");
             helper.setFrom(from);
             helper.setTo(to);
-            helper.setSubject("[BCT Supervision] Intervention requise — " + resourceName);
-            helper.setText(buildHtml(resourceName, causeCategory, description, severity), true);
+            helper.setSubject(subject);
+            helper.setText(buildHtml(title, intro, resourceName, causeCategory, description, severity), true);
             mailSender.send(mimeMessage);
             log.info("Notification envoyée à {} pour {}", to, resourceName);
             return true;
@@ -53,8 +75,7 @@ public class EmailNotificationService {
             return false;
         }
     }
-
-    private String buildHtml(String resourceName, String causeCategory, String description, String severity) {
+    private String buildHtml(String title, String intro, String resourceName, String causeCategory, String description, String severity) {
         String safeResource = HtmlUtils.htmlEscape(resourceName);
         String safeDescription = HtmlUtils.htmlEscape(description);
 
@@ -87,9 +108,9 @@ public class EmailNotificationService {
                     </div>
                     <div style="padding:26px 24px 8px;">
                       <span style="display:inline-block;background:%s;color:%s;font-size:11px;font-weight:600;letter-spacing:.03em;padding:4px 10px;border-radius:8px;margin-bottom:14px;">%s</span>
-                      <h1 style="margin:0 0 6px;font-size:18px;color:#1b1f23;font-weight:600;">Intervention manuelle requise</h1>
+                      <h1 style="margin:0 0 6px;font-size:18px;color:#1b1f23;font-weight:600;">%s</h1>
                       <p style="margin:0 0 20px;color:#454b52;font-size:14px;line-height:1.6;">
-                        La plateforme n'a pas pu résoudre cette situation elle-même sur <b>%s</b>.
+                        %s
                       </p>
                       <table style="width:100%%;border-collapse:collapse;">
                         <tr>
@@ -108,6 +129,6 @@ public class EmailNotificationService {
                     </div>
                   </div>
                 </div>
-                """.formatted(badgeColors[0], badgeColors[1], badgeLabel, safeResource, safeResource, causeRow, safeDescription, timestamp);
+                """.formatted(badgeColors[0], badgeColors[1], badgeLabel, title, intro, safeResource, causeRow, safeDescription, timestamp);
     }
 }

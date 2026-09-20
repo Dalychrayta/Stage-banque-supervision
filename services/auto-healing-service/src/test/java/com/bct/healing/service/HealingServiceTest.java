@@ -136,6 +136,27 @@ class HealingServiceTest {
     }
 
     @Test
+    void aFailedAutomaticRepair_shouldEmailTheTeamAndKeepTheIncidentOpen() {
+        when(realActionExecutor.isRealTarget("srv-001")).thenReturn(true);
+        when(realActionExecutor.restartRealService())
+                .thenReturn(new RealActionExecutor.ActionResult(false, "[RÉEL - ÉCHEC] docker indisponible"));
+
+        HealingAction result = healingService.triggerHealing(event("CPU_SATURATION", "CRITICAL", 70L));
+
+        assertThat(result.getStatus()).isEqualTo(ActionStatus.FAILED);
+        verify(emailNotificationService).sendActionFailureNotification(
+                "test-server", "CPU_SATURATION", "KILL_PROCESS", "[RÉEL - ÉCHEC] docker indisponible", "CRITICAL");
+        verify(rcaServiceClient, never()).resolveIncident(any());
+    }
+
+    @Test
+    void aSuccessfulAutomaticRepair_shouldNotSendAFailureEmail() {
+        healingService.triggerHealing(event("HIGH_LATENCY", "WARNING", 71L));
+
+        verify(emailNotificationService, never()).sendActionFailureNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
     void triggerManual_shouldNeverBeMarkedAutomaticAndNeverResolveIncident() {
         HealingAction result = healingService.triggerManual(
                 "srv-005", "manual-server", ActionType.CLEAR_CACHE, "operator", "cache incoherent apres migration");

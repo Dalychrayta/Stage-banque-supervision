@@ -97,6 +97,14 @@ public class HealingService {
         log.info("Action {} exécutée pour {} — statut: {} — résultat: {}",
                 rule.actionType(), resourceId, saved.getStatus(), result.message());
 
+        // Une réparation automatique qui échoue laisse l'incident ouvert : sans
+        // email, personne ne s'en apercevrait avant d'ouvrir le tableau de bord.
+        // NOTIFY_TEAM est exclu : son échec, c'est justement l'email lui-même.
+        if (!result.success() && rule.actionType() != ActionType.NOTIFY_TEAM) {
+            emailNotificationService.sendActionFailureNotification(
+                    resourceName, causeCategory, rule.actionType().name(), result.message(), severity);
+        }
+
         // L'incident RCA n'est refermé que si l'action le répare vraiment et
         // qu'elle a réussi. NOTIFY_TEAM prévient un humain sans rien réparer :
         // l'incident reste donc ouvert, en attente d'intervention.
