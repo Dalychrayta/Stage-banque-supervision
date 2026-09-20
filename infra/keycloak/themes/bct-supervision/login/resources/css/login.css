@@ -153,3 +153,33 @@ html, body, .login-pf, .pf-v5-c-login {
   body::before { top: 200px; }
   body::after  { top: 352px; }
 }
+
+/* ---- Page entièrement sombre : plus de fond ivoire, carte sombre ---- */
+html, body, .login-pf, .pf-v5-c-login { background: #23201a !important; background-image: none !important; color: #ebe5d7; }
+.pf-v5-c-login__header::before { color: #ebe5d7; }
+
+.pf-v5-c-login__main { background: #302b22 !important; border: 1px solid #3a342a !important; }
+.pf-v5-c-login__main-header .pf-v5-c-title { color: #ffffff; }
+.pf-v5-c-login__main-header::after { color: #9c9482; }
+.pf-v5-c-form__label-text { color: #ebe5d7; }
+.pf-v5-c-form-control { background: #23201a !important; border-color: #4a4232 !important; color: #ebe5d7 !important; }
+.pf-v5-c-form-control input { background: transparent !important; color: #ebe5d7 !important; }
+.pf-v5-c-form-control:focus-within { border-color: #d9b455 !important; }
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control { color: #9c9482 !important; }
+.pf-v5-c-form-control input:-webkit-autofill { -webkit-box-shadow: 0 0 0 40px #23201a inset; -webkit-text-fill-color: #ebe5d7; }
+.pf-v5-c-login a { color: #d9b455; }
+.pf-v5-c-form__helper-text, .pf-m-error, .kc-feedback-text, .pf-v5-c-helper-text__item-text { color: #ef6a7c !important; }
+:focus-visible { outline-color: #d9b455; }
+
+@media (min-width: 900px) {
+  html::before {
+    top: 0; left: 0; right: 0; bottom: 0; width: auto; border-radius: 0;
+    background-image:
+      radial-gradient(900px 520px at 78% 96%, rgba(212, 167, 44, 0.20), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='360' viewBox='0 0 1440 360' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3Cpattern id='d' width='32' height='32' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='16' cy='16' r='2' fill='%234a4232'/%3E%3C/pattern%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23fff'/%3E%3C/linearGradient%3E%3ClinearGradient id='h' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='0'/%3E%3Cstop offset='.25' stop-color='%23fff'/%3E%3C/linearGradient%3E%3Cmask id='m'%3E%3Crect width='1440' height='360' fill='url(%23g)'/%3E%3C/mask%3E%3Cmask id='mh'%3E%3Crect width='1440' height='360' fill='url(%23h)'/%3E%3C/mask%3E%3Cfilter id='b' x='-5%25' y='-60%25' width='110%25' height='220%25'%3E%3CfeGaussianBlur stdDeviation='7'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='1440' height='360' fill='url(%23d)' mask='url(%23m)'/%3E%3Cg mask='url(%23mh)'%3E%3Cpath d='M0 250H420L460 250L485 172L520 318L558 118L592 250H1440' fill='none' stroke='%23d4a72c' stroke-width='4' stroke-linejoin='round' stroke-linecap='round' filter='url(%23b)' opacity='.6'/%3E%3Cpath d='M0 250H420L460 250L485 172L520 318L558 118L592 250H1440' fill='none' stroke='%23d4a72c' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round'/%3E%3Ccircle cx='558' cy='118' r='12' fill='none' stroke='%23d4a72c' stroke-opacity='.35'/%3E%3Ccircle cx='558' cy='118' r='5' fill='%23d4a72c'/%3E%3C/g%3E%3Ccircle cx='1380' cy='250' r='9' fill='%233b6b46' fill-opacity='.35'/%3E%3Ccircle cx='1380' cy='250' r='4' fill='%236fb383'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat;
+    background-position: 0 0, center bottom 130px;
+    background-size: 100% 100%, 100% 360px;
+  }
+  .pf-v5-c-login__main { width: 460px; }
+}
